@@ -10,7 +10,7 @@
 # Render, Cloud Run, etc.
 
 # ── Stage 1: build ────────────────────────────────────────────────
-FROM --platform=$BUILDPLATFORM golang:1.23-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS builder
 
 WORKDIR /src
 
