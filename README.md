@@ -81,7 +81,11 @@ The single source of truth for which endpoints are exposed is [`internal/cli/act
 }
 ```
 
-Edit the file, rebuild or redeploy. The same file lives in [`github.com/datpaq/cli`](https://github.com/datpaq/cli) — keep both in sync when adding a new API.
+Edit the file, rebuild or redeploy. The same file lives in [`github.com/datpaq/cli`](https://github.com/datpaq/cli) — keep both in sync when adding a new API. If the CLI repo is checked out as a sibling directory, mirror the file with:
+
+```bash
+./scripts/sync-active-apis.sh
+```
 
 ## Development
 
