@@ -1,0 +1,23 @@
+# Local build output
+/bin/
+/build/
+
+# Git + IDE
+.git
+.github
+.vscode
+.idea
+.DS_Store
+
+# Tests + docs not needed for `go build`
+docs/cli-terminal.png/
+*.tape
+generate-cli-screenshots.sh
+
+# Local config / secrets — must never reach the container layer
+.env
+.env.local
+*.local
+
+# Printing-press run state
+.runstate/

@@ -1,0 +1,58 @@
+# Fly.io deployment for the hosted Datpaq MCP server.
+#
+# First-time setup (one-time):
+#   fly auth login
+#   fly launch --no-deploy --copy-config --name datpaq-mcp
+#     # accepts this fly.toml; creates the app and the Fly DNS name
+#     # https://datpaq-mcp.fly.dev. No machines are started yet.
+#
+# Deploy:
+#   fly deploy
+#     # builds cmd/datpaq-mcp-http/Dockerfile remotely and rolls a
+#     # machine. ~2-3 min on first run; ~30s on rebuilds thanks to
+#     # the layer cache.
+#
+# Custom domain (e.g. mcp.datpaq.com):
+#   fly certs add mcp.datpaq.com
+#     # then add the CNAME / A records Fly prints, and TLS lights up
+#     # within a few minutes.
+#
+# Logs / shell:
+#   fly logs            # tail structured stdout
+#   fly status          # machine + cert + checks summary
+#
+# All knobs live here; nothing in the Go code knows what host it's
+# running on, so swapping providers later is a contained change.
+
+app = "datpaq-mcp"
+primary_region = "iad"  # us-east, close to typical North America agent traffic
+
+[build]
+  dockerfile = "cmd/datpaq-mcp-http/Dockerfile"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  # Scale machines to zero when idle. Combined with min_machines_running = 0
+  # this keeps the bill near zero when nobody is hitting the server. Cold
+  # start is sub-second for a static Go binary, so the latency cost is
+  # negligible for typical MCP usage.
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/healthz"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
+
+# No [env] block here: the only knob is DATPAQ_BASE_URL, and it
+# defaults to production in the binary. Set it via `fly secrets set`
+# if you ever want to point a staging instance at a non-prod API.
