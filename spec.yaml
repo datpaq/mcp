@@ -1,0 +1,3590 @@
+openapi: 3.0.3
+info:
+  title: Datpaq ProAPI
+  description: >
+    Comprehensive multi-service API platform providing aviation, geolocation, financial, utilities, image processing,
+    and data enrichment capabilities. All endpoints require authentication via API key passed as an x-api-key header or
+    api_key query parameter.
+  version: 1.0.0
+  contact:
+    name: Datpaq Support
+    url: https://datpaq.com
+  license:
+    name: Proprietary
+servers:
+  - url: https://datpaq.com/api/v1
+    description: Production
+  - url: https://staging.datpaq.com/api/v1
+    description: Staging
+security:
+  - ApiKeyHeader: []
+  - ApiKeyQuery: []
+tags:
+  - name: Aircraft
+    description: FAA aircraft registry lookups by tail number, ICAO hex, or type code
+  - name: Company Enrichment
+    description: Company data enrichment by name or domain
+  - name: Convert Time
+    description: Timezone-aware datetime conversion
+  - name: Country Codes
+    description: ISO country code lookup and metadata
+  - name: Current Time
+    description: Current time by IANA timezone identifier
+  - name: Dictionary
+    description: Word definitions and linguistic data
+  - name: DNS Lookup
+    description: DNS record resolution (A, MX, CNAME, TXT, NS, ALL)
+  - name: Domain Lookup
+    description: Domain availability and registration information
+  - name: Email Validation
+    description: Email address format and deliverability validation
+  - name: EV Charger
+    description: Electric vehicle charging station discovery and status
+  - name: Exchange Rates
+    description: Currency exchange rates and conversion
+  - name: Helicopter
+    description: Helicopter registry lookups by registration, ICAO, or serial number
+  - name: Image Processing
+    description: Image resize, compress, convert, crop, and pipeline operations
+  - name: IP Geolocation
+    description: Geographic location data for IPv4 and IPv6 addresses
+  - name: IP Intelligence
+    description: Threat intelligence and risk scoring for IP addresses
+  - name: MAC Address
+    description: MAC address vendor and manufacturer resolution
+  - name: MX Lookup
+    description: Mail exchange record lookup with optional SMTP and SPF validation
+  - name: Precious Metals
+    description: Precious metal and cryptocurrency pricing data
+  - name: Profanity
+    description: Content moderation and profanity detection
+  - name: Public Holidays
+    description: Global public holiday data by country and year
+  - name: Sample Data
+    description: Mock data generation for testing and development (Faker.js)
+  - name: Secure Relay
+    description: Secure HMAC-verified HTTP request forwarding
+  - name: Spell Check
+    description: Multi-language spell checking with correction suggestions
+  - name: States
+    description: U.S. state metadata by abbreviation or FIPS code
+  - name: Text Language
+    description: Text language detection supporting 176+ languages
+  - name: Thesaurus
+    description: Synonyms, antonyms, and related word lookup
+  - name: Unit Conversion
+    description: Unit conversion across 100+ measurement types
+  - name: User Avatar
+    description: Dynamic user avatar generation in PNG, WebP, or SVG
+  - name: Validate IP
+    description: IP address validation and classification (IPv4, IPv6, CIDR)
+  - name: VIN Lookup
+    description: Vehicle identification number decoding via NHTSA
+  - name: Web Screenshot
+    description: Web page screenshot capture via headless browser
+  - name: WHOIS
+    description: Domain WHOIS registration data lookup
+  - name: Working Days
+    description: Business day calculations with regional holiday support
+paths:
+  /aircraft/lookup:
+    get:
+      tags:
+        - Aircraft
+      operationId: aircraftLookupByTail
+      summary: Look up aircraft by tail number
+      description: >
+        Returns aircraft ownership, manufacturer, model, type, and year from the FAA registry using an N-number (tail
+        number).
+      parameters:
+        - name: tail
+          in: query
+          required: true
+          description: FAA tail/N-number (e.g. N12345)
+          schema:
+            type: string
+            example: N12345
+      responses:
+        "200":
+          description: Aircraft record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AircraftRecord"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /aircraft/icao/{hex}:
+    get:
+      tags:
+        - Aircraft
+      operationId: aircraftLookupByIcao
+      summary: Look up aircraft by ICAO hex code
+      parameters:
+        - name: hex
+          in: path
+          required: true
+          description: 6-character ICAO hexadecimal transponder code
+          schema:
+            type: string
+            pattern: ^[0-9A-Fa-f]{6}$
+            example: A1B2C3
+      responses:
+        "200":
+          description: Aircraft record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AircraftRecord"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /aircraft/type/{code}:
+    get:
+      tags:
+        - Aircraft
+      operationId: aircraftLookupByType
+      summary: Look up aircraft type specifications
+      parameters:
+        - name: code
+          in: path
+          required: true
+          description: Aircraft type designator code (ICAO, e.g. B737, C172)
+          schema:
+            type: string
+            example: B737
+      responses:
+        "200":
+          description: Aircraft type specifications
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /aircraft/batch:
+    post:
+      tags:
+        - Aircraft
+      operationId: aircraftBatchLookup
+      summary: Batch aircraft lookups by tail number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tails
+              properties:
+                tails:
+                  type: array
+                  items:
+                    type: string
+                  maxItems: 100
+                  example:
+                    - N12345
+                    - N67890
+      responses:
+        "200":
+          description: Array of aircraft records
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /company-enrichment/enrich:
+    post:
+      tags:
+        - Company Enrichment
+      operationId: companyEnrich
+      summary: Enrich company data by name or domain
+      description: >
+        Returns structured company data including industry, size, social profiles, and contact information. Provide
+        company_name, domain, or both.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                company_name:
+                  type: string
+                  example: OpenAI
+                domain:
+                  type: string
+                  example: openai.com
+      responses:
+        "200":
+          description: Enriched company data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /convert-time:
+    get:
+      tags:
+        - Convert Time
+      operationId: convertTime
+      summary: Convert a datetime between timezones
+      description: >
+        Converts a datetime value from a source timezone to a target timezone. Accepts ISO 8601 strings, Unix epoch
+        timestamps, or omit sourceTime to convert the current time.
+      parameters:
+        - name: sourceTime
+          in: query
+          required: false
+          description: Time to convert (ISO 8601 or Unix ms). Defaults to current time.
+          schema:
+            type: string
+            example: "2025-12-31T12:00:00Z"
+        - name: sourceZone
+          in: query
+          required: true
+          description: Source IANA timezone identifier
+          schema:
+            type: string
+            example: America/New_York
+        - name: targetZone
+          in: query
+          required: true
+          description: Target IANA timezone identifier
+          schema:
+            type: string
+            example: Europe/London
+      responses:
+        "200":
+          description: Converted datetime with timezone metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /country-codes/countries:
+    get:
+      tags:
+        - Country Codes
+      operationId: countryList
+      summary: List all countries with ISO codes and metadata
+      responses:
+        "200":
+          description: Array of country objects
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /country-codes/countries/{iso}:
+    get:
+      tags:
+        - Country Codes
+      operationId: countryByIso
+      summary: Get a country by ISO 2 or ISO 3 code
+      parameters:
+        - name: iso
+          in: path
+          required: true
+          description: ISO 3166-1 alpha-2 or alpha-3 code
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 3
+            example: US
+      responses:
+        "200":
+          description: Country object
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /country-codes/countries/search:
+    get:
+      tags:
+        - Country Codes
+      operationId: countrySearch
+      summary: Search countries by full or partial name
+      parameters:
+        - name: name
+          in: query
+          required: true
+          schema:
+            type: string
+            example: United States
+      responses:
+        "200":
+          description: Matching countries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /country-codes/export:
+    get:
+      tags:
+        - Country Codes
+      operationId: countryExport
+      summary: Export country data in bulk
+      parameters:
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - json
+              - csv
+            default: json
+      responses:
+        "200":
+          description: Exported country data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /current-time:
+    get:
+      tags:
+        - Current Time
+      operationId: currentTime
+      summary: Get current time for an IANA timezone
+      description: Returns the current date/time with UTC offset and DST status for a given timezone.
+      parameters:
+        - name: target
+          in: query
+          required: true
+          description: IANA timezone identifier (e.g. America/New_York, UTC, Asia/Tokyo)
+          schema:
+            type: string
+            example: America/New_York
+      responses:
+        "200":
+          description: Current time data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /define:
+    post:
+      tags:
+        - Dictionary
+      operationId: dictionaryDefine
+      summary: Look up word definition
+      description: Returns definitions, part of speech, pronunciation, and etymology for the given word.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - word
+              properties:
+                word:
+                  type: string
+                  example: serendipity
+                include_pronunciation:
+                  type: boolean
+                  default: false
+      responses:
+        "200":
+          description: Word definition(s)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /dns:
+    get:
+      tags:
+        - DNS Lookup
+      operationId: dnsLookup
+      summary: Resolve DNS records for a domain
+      description: Supports record types A, AAAA, MX, CNAME, TXT, NS, SOA, and ALL.
+      parameters:
+        - name: domain
+          in: query
+          required: true
+          schema:
+            type: string
+            example: example.com
+        - name: type
+          in: query
+          required: false
+          description: DNS record type. Defaults to A.
+          schema:
+            type: string
+            enum:
+              - A
+              - AAAA
+              - MX
+              - CNAME
+              - TXT
+              - NS
+              - SOA
+              - ALL
+            default: A
+      responses:
+        "200":
+          description: DNS record(s)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /domain-lookup:
+    get:
+      tags:
+        - Domain Lookup
+      operationId: domainLookupGet
+      summary: Check domain availability and registration info
+      parameters:
+        - name: domain
+          in: query
+          required: true
+          schema:
+            type: string
+            example: example.com
+        - name: include_registration
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: include_expiry
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: tlds
+          in: query
+          required: false
+          description: Comma-separated TLDs to check (e.g. com,net,org)
+          schema:
+            type: string
+            example: com,net,org
+      responses:
+        "200":
+          description: Domain availability and registration data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /domain-lookup/lookup:
+    post:
+      tags:
+        - Domain Lookup
+      operationId: domainLookupPost
+      summary: Check domain availability (POST)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - domain
+              properties:
+                domain:
+                  type: string
+                  example: example.com
+                tlds:
+                  type: array
+                  items:
+                    type: string
+                  example:
+                    - com
+                    - net
+                    - org
+      responses:
+        "200":
+          description: Domain availability data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /email-validation/validate:
+    post:
+      tags:
+        - Email Validation
+      operationId: emailValidateSingle
+      summary: Validate a single email address
+      description: >
+        Checks email format, domain MX records, and optional deliverability. Detects disposable/temporary address
+        providers.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                include_details:
+                  type: boolean
+                  default: false
+      responses:
+        "200":
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /email-validation/validate-batch:
+    post:
+      tags:
+        - Email Validation
+      operationId: emailValidateBatch
+      summary: Validate multiple email addresses
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - emails
+              properties:
+                emails:
+                  type: array
+                  items:
+                    type: string
+                    format: email
+                  maxItems: 1000
+                  example:
+                    - alice@example.com
+                    - bob@test.org
+      responses:
+        "200":
+          description: Batch validation results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /ev-charger/stations:
+    get:
+      tags:
+        - EV Charger
+      operationId: evStationsByCoords
+      summary: Find EV charging stations near coordinates
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          description: Latitude (-90 to 90)
+          schema:
+            type: number
+            example: 37.7749
+        - name: lon
+          in: query
+          required: true
+          description: Longitude (-180 to 180)
+          schema:
+            type: number
+            example: -122.4194
+        - name: radius
+          in: query
+          required: false
+          description: Search radius in miles (max 100, default 5)
+          schema:
+            type: number
+            default: 5
+      responses:
+        "200":
+          description: List of nearby charging stations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /ev-charger/stations/search:
+    get:
+      tags:
+        - EV Charger
+      operationId: evStationsByAddress
+      summary: Search EV charging stations by address
+      parameters:
+        - name: address
+          in: query
+          required: true
+          schema:
+            type: string
+            example: San Francisco, CA
+      responses:
+        "200":
+          description: Matching charging stations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /ev-charger/stations/{id}:
+    get:
+      tags:
+        - EV Charger
+      operationId: evStationById
+      summary: Get specific charging station by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "12345"
+      responses:
+        "200":
+          description: Station details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /ev-charger/networks:
+    get:
+      tags:
+        - EV Charger
+      operationId: evNetworks
+      summary: List all supported charging networks
+      responses:
+        "200":
+          description: Network list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /ev-charger/status/{id}:
+    get:
+      tags:
+        - EV Charger
+      operationId: evStationStatus
+      summary: Get real-time station status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "12345"
+      responses:
+        "200":
+          description: Station availability status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /exchange-rates-and-currency/api/exchange:
+    get:
+      tags:
+        - Exchange Rates
+      operationId: exchangeRateGet
+      summary: Get exchange rate or convert currency
+      description: >
+        Returns the current exchange rate between two currencies. Provide an amount to perform conversion. Supports fiat
+        (ISO 4217) and crypto (BTC, ETH).
+      parameters:
+        - name: from
+          in: query
+          required: true
+          description: Source currency code (e.g. USD) or crypto symbol (e.g. BTC)
+          schema:
+            type: string
+            example: USD
+        - name: to
+          in: query
+          required: true
+          description: Target currency code
+          schema:
+            type: string
+            example: EUR
+        - name: amount
+          in: query
+          required: false
+          description: Amount to convert. Omit to retrieve rate only.
+          schema:
+            type: number
+            minimum: 0
+            example: 100
+      responses:
+        "200":
+          description: Exchange rate or converted amount
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /exchange-rates-and-currency/api/bulk-exchange:
+    post:
+      tags:
+        - Exchange Rates
+      operationId: exchangeRateBulk
+      summary: Batch currency conversions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - conversions
+              properties:
+                conversions:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - from
+                      - to
+                    properties:
+                      from:
+                        type: string
+                        example: USD
+                      to:
+                        type: string
+                        example: EUR
+                      amount:
+                        type: number
+                        example: 100
+      responses:
+        "200":
+          description: Batch conversion results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /helicopter/lookup:
+    get:
+      tags:
+        - Helicopter
+      operationId: helicopterLookupByRegistration
+      summary: Look up helicopter by registration number
+      parameters:
+        - name: registration
+          in: query
+          required: true
+          schema:
+            type: string
+            example: N123H
+      responses:
+        "200":
+          description: Helicopter registry record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /helicopter/icao/{hex}:
+    get:
+      tags:
+        - Helicopter
+      operationId: helicopterLookupByIcao
+      summary: Look up helicopter by ICAO hex code
+      parameters:
+        - name: hex
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-9A-Fa-f]{6}$
+            example: A1B2C3
+      responses:
+        "200":
+          description: Helicopter record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /helicopter/serial/{serial}:
+    get:
+      tags:
+        - Helicopter
+      operationId: helicopterLookupBySerial
+      summary: Look up helicopter by manufacturer serial number
+      parameters:
+        - name: serial
+          in: path
+          required: true
+          schema:
+            type: string
+            example: MSN12345
+      responses:
+        "200":
+          description: Helicopter record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /helicopter/manufacturers:
+    get:
+      tags:
+        - Helicopter
+      operationId: helicopterManufacturers
+      summary: List helicopter manufacturers
+      responses:
+        "200":
+          description: Manufacturer list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /image-processing/process:
+    post:
+      tags:
+        - Image Processing
+      operationId: imagePipeline
+      summary: Run an image through a multi-step operation pipeline
+      description: >
+        Executes an ordered array of image operations in a single request. Recommended over individual endpoints when
+        multiple operations are needed. Supports resize, compress, convert, crop, and metadata.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - image_url
+                - operations
+              properties:
+                image_url:
+                  type: string
+                  format: uri
+                  example: https://example.com/photo.jpg
+                operations:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - operation
+                    properties:
+                      operation:
+                        type: string
+                        enum:
+                          - resize
+                          - compress
+                          - convert
+                          - crop
+                          - metadata
+                      width:
+                        type: integer
+                        minimum: 1
+                      height:
+                        type: integer
+                        minimum: 1
+                      quality:
+                        type: integer
+                        minimum: 1
+                        maximum: 100
+                      format:
+                        type: string
+                        enum:
+                          - jpeg
+                          - png
+                          - webp
+                          - avif
+      responses:
+        "200":
+          description: Processed image binary or JSON metadata
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /image-processing/resize:
+    post:
+      tags:
+        - Image Processing
+      operationId: imageResize
+      summary: Resize an image to specified dimensions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - image_url
+              properties:
+                image_url:
+                  type: string
+                  format: uri
+                width:
+                  type: integer
+                  example: 800
+                height:
+                  type: integer
+                  example: 600
+                fit:
+                  type: string
+                  enum:
+                    - cover
+                    - contain
+                    - fill
+                    - inside
+                    - outside
+                  default: cover
+      responses:
+        "200":
+          description: Resized image binary
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /image-processing/compress:
+    post:
+      tags:
+        - Image Processing
+      operationId: imageCompress
+      summary: Compress an image
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - image_url
+              properties:
+                image_url:
+                  type: string
+                  format: uri
+                quality:
+                  type: integer
+                  minimum: 1
+                  maximum: 100
+                  example: 75
+      responses:
+        "200":
+          description: Compressed image binary
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /image-processing/convert:
+    post:
+      tags:
+        - Image Processing
+      operationId: imageConvert
+      summary: Convert image to a different format
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - image_url
+                - format
+              properties:
+                image_url:
+                  type: string
+                  format: uri
+                format:
+                  type: string
+                  enum:
+                    - jpeg
+                    - png
+                    - webp
+                    - avif
+                  example: webp
+      responses:
+        "200":
+          description: Converted image binary
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /image-processing/crop:
+    post:
+      tags:
+        - Image Processing
+      operationId: imageCrop
+      summary: Crop an image to a region
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - image_url
+                - x
+                - "y"
+                - width
+                - height
+              properties:
+                image_url:
+                  type: string
+                  format: uri
+                x:
+                  type: integer
+                  minimum: 0
+                "y":
+                  type: integer
+                  minimum: 0
+                width:
+                  type: integer
+                  minimum: 1
+                height:
+                  type: integer
+                  minimum: 1
+      responses:
+        "200":
+          description: Cropped image binary
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /image-processing/metadata:
+    post:
+      tags:
+        - Image Processing
+      operationId: imageMetadata
+      summary: Extract metadata from an image
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - image_url
+              properties:
+                image_url:
+                  type: string
+                  format: uri
+      responses:
+        "200":
+          description: Image metadata (dimensions, format, EXIF, color profile)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /ip-geolocation:
+    get:
+      tags:
+        - IP Geolocation
+      operationId: ipGeolocationGet
+      summary: Get geographic location for an IP address
+      description: |
+        Returns country, region, city, coordinates, ISP, ASN, and timezone for any IPv4 or IPv6 address.
+      parameters:
+        - name: ip
+          in: query
+          required: true
+          schema:
+            type: string
+            example: 8.8.8.8
+      responses:
+        "200":
+          description: Geolocation data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+    post:
+      tags:
+        - IP Geolocation
+      operationId: ipGeolocationPost
+      summary: Get geographic location for an IP address (POST)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ip
+              properties:
+                ip:
+                  type: string
+                  example: 8.8.8.8
+      responses:
+        "200":
+          description: Geolocation data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /ip-geolocation/batch:
+    post:
+      tags:
+        - IP Geolocation
+      operationId: ipGeolocationBatch
+      summary: Batch IP geolocation lookup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ips
+              properties:
+                ips:
+                  type: array
+                  items:
+                    type: string
+                  maxItems: 100
+                  example:
+                    - 8.8.8.8
+                    - 1.1.1.1
+      responses:
+        "200":
+          description: Geolocation data for each IP
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /ip-intelligence:
+    get:
+      tags:
+        - IP Intelligence
+      operationId: ipIntelligenceGet
+      summary: Get threat intelligence for an IP address
+      description: >
+        Returns trust score, risk classification, VPN/proxy/Tor detection, datacenter detection, and threat categories.
+        Omit the ip parameter to analyze the caller's IP.
+      parameters:
+        - name: ip
+          in: query
+          required: false
+          description: IP to analyze. Omits to use the caller's IP.
+          schema:
+            type: string
+            example: 8.8.8.8
+      responses:
+        "200":
+          description: IP threat intelligence data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /ip-intelligence/batch:
+    post:
+      tags:
+        - IP Intelligence
+      operationId: ipIntelligenceBatch
+      summary: Batch IP threat intelligence lookup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ips
+              properties:
+                ips:
+                  type: array
+                  items:
+                    type: string
+                  maxItems: 100
+                  example:
+                    - 8.8.8.8
+                    - 1.1.1.1
+      responses:
+        "200":
+          description: Threat intelligence for each IP
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /mac-address:
+    get:
+      tags:
+        - MAC Address
+      operationId: macAddressLookup
+      summary: Resolve MAC address vendor and manufacturer
+      description: >
+        Lookup vendor by full MAC address, 6-character OUI prefix, or organization name. Provide exactly one of the
+        three parameters.
+      parameters:
+        - name: mac
+          in: query
+          required: false
+          description: Full MAC address (XX:XX:XX:XX:XX:XX or XX-XX-XX-XX-XX-XX)
+          schema:
+            type: string
+            example: "00:11:22:33:44:55"
+        - name: prefix
+          in: query
+          required: false
+          description: 6-character hex OUI prefix
+          schema:
+            type: string
+            example: "001122"
+        - name: org
+          in: query
+          required: false
+          description: Organization name search (min 2 chars)
+          schema:
+            type: string
+            example: Apple
+      responses:
+        "200":
+          description: Vendor information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /mx-lookup:
+    get:
+      tags:
+        - MX Lookup
+      operationId: mxLookupGet
+      summary: Look up MX records for a domain
+      description: Returns mail exchange records with optional IP resolution, SMTP testing, and SPF extraction.
+      parameters:
+        - name: domain
+          in: query
+          required: true
+          schema:
+            type: string
+            example: gmail.com
+        - name: resolve_ips
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: test_smtp
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: include_spf
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: MX records and optional metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /mx-lookup/lookup:
+    post:
+      tags:
+        - MX Lookup
+      operationId: mxLookupPost
+      summary: Look up MX records for a domain (POST)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - domain
+              properties:
+                domain:
+                  type: string
+                  example: gmail.com
+                resolve_ips:
+                  type: boolean
+                  default: false
+                test_smtp:
+                  type: boolean
+                  default: false
+                include_spf:
+                  type: boolean
+                  default: false
+      responses:
+        "200":
+          description: MX records and optional metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /mx-lookup/batch:
+    post:
+      tags:
+        - MX Lookup
+      operationId: mxLookupBatch
+      summary: Batch MX record lookup for multiple domains
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - domains
+              properties:
+                domains:
+                  type: array
+                  items:
+                    type: string
+                  maxItems: 50
+                  example:
+                    - gmail.com
+                    - yahoo.com
+      responses:
+        "200":
+          description: MX records for each domain
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /precious-metals/assets:
+    get:
+      tags:
+        - Precious Metals
+      operationId: preciousMetalsAssets
+      summary: List all supported precious metal and crypto assets
+      description: Returns metadata for all supported assets — gold (XAU), silver (XAG), palladium (XPD), copper, BTC, ETH, etc.
+      responses:
+        "200":
+          description: Asset list with metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /precious-metals/prices:
+    get:
+      tags:
+        - Precious Metals
+      operationId: preciousMetalsPrices
+      summary: Get current prices for precious metals and crypto
+      parameters:
+        - name: symbol
+          in: query
+          required: false
+          description: Asset symbol (e.g. XAU, XAG, BTC). Returns all assets if omitted.
+          schema:
+            type: string
+            example: XAU
+        - name: currency
+          in: query
+          required: false
+          description: Quote currency (ISO 4217, default USD)
+          schema:
+            type: string
+            default: USD
+            example: USD
+      responses:
+        "200":
+          description: Current asset prices
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /precious-metals/history/{symbol}:
+    get:
+      tags:
+        - Precious Metals
+      operationId: preciousMetalsHistory
+      summary: Get historical price data for an asset
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          description: Asset symbol
+          schema:
+            type: string
+            enum:
+              - XAU
+              - XAG
+              - XPD
+              - copper
+              - BTC
+              - ETH
+            example: XAU
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+            example: "2025-01-01"
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+            example: "2025-12-31"
+      responses:
+        "200":
+          description: Historical price records
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /profanity/filter:
+    get:
+      tags:
+        - Profanity
+      operationId: profanityFilter
+      summary: Filter profanity from text
+      description: Replaces profane words with asterisks. Returns cleaned text.
+      parameters:
+        - name: text
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Filtered text
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /profanity/detect:
+    get:
+      tags:
+        - Profanity
+      operationId: profanityDetect
+      summary: Detect whether text contains profanity
+      parameters:
+        - name: text
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Detection result (contains, word count)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /profanity/analyze:
+    get:
+      tags:
+        - Profanity
+      operationId: profanityAnalyze
+      summary: Comprehensive profanity analysis with severity and word positions
+      parameters:
+        - name: text
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Detailed analysis with severity score, word positions, and categories
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /public-holidays:
+    get:
+      tags:
+        - Public Holidays
+      operationId: publicHolidays
+      summary: Query public holidays by country and year
+      description: >
+        Accepts ISO-2, ISO-3, or full country names. Returns holidays with ISO, US, and EU date formats. Filter by year
+        and/or month.
+      parameters:
+        - name: country
+          in: query
+          required: true
+          description: Country code (ISO-2/ISO-3) or full name
+          schema:
+            type: string
+            example: US
+        - name: year
+          in: query
+          required: false
+          schema:
+            type: integer
+            example: 2026
+        - name: month
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+            example: 12
+      responses:
+        "200":
+          description: List of public holidays
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /public-holidays/countries:
+    get:
+      tags:
+        - Public Holidays
+      operationId: publicHolidaysCountries
+      summary: List all supported countries for holiday data
+      responses:
+        "200":
+          description: Supported country list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /sample-data/batch:
+    get:
+      tags:
+        - Sample Data
+      operationId: sampleDataBatchGet
+      summary: Generate multiple types of sample data (GET)
+      description: >
+        Generates mock data using Faker.js. Supports 20+ schema types including user, person, address, company, product,
+        and more. Use the requests parameter as a JSON-encoded array.
+      parameters:
+        - name: requests
+          in: query
+          required: true
+          description: JSON-encoded array of generation requests [{type, count, fields?}]
+          schema:
+            type: string
+            example: "[{\"type\":\"user\",\"count\":5}]"
+      responses:
+        "200":
+          description: Generated data records
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+    post:
+      tags:
+        - Sample Data
+      operationId: sampleDataBatchPost
+      summary: Generate multiple types of sample data (POST)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - requests
+              properties:
+                requests:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - type
+                      - count
+                    properties:
+                      type:
+                        type: string
+                        description: Schema type (user, person, address, company, product, etc.)
+                        example: user
+                      count:
+                        type: integer
+                        minimum: 1
+                        maximum: 1000
+                        example: 10
+                      fields:
+                        type: array
+                        items:
+                          type: string
+                        description: Specific fields to include. Returns all fields if omitted.
+      responses:
+        "200":
+          description: Generated data records
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /secure-relay/relay:
+    post:
+      tags:
+        - Secure Relay
+      operationId: secureRelayRelay
+      summary: Relay an HTTP request via HMAC-verified secure proxy
+      description: >
+        Forwards HTTP requests to HTTPS targets with no server-side storage. Requests must include HMAC-SHA256 signature
+        headers for verification. Supports replay attack protection via timestamp validation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - url
+                - method
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: Target HTTPS URL
+                  example: https://api.example.com/data
+                method:
+                  type: string
+                  enum:
+                    - GET
+                    - POST
+                    - PUT
+                    - PATCH
+                    - DELETE
+                  example: POST
+                headers:
+                  type: object
+                  additionalProperties:
+                    type: string
+                  description: Additional headers to include in the relayed request
+                body:
+                  type: object
+                  description: Request body for POST/PUT/PATCH requests
+      responses:
+        "200":
+          description: Relayed response payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /secure-relay/custom:
+    post:
+      tags:
+        - Secure Relay
+      operationId: secureRelayCustom
+      summary: Custom relay with user-defined headers and transformations
+      description: >
+        Legacy relay endpoint with extended configuration options for custom header injection and response
+        transformation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - url
+                - method
+              properties:
+                url:
+                  type: string
+                  format: uri
+                method:
+                  type: string
+                  enum:
+                    - GET
+                    - POST
+                    - PUT
+                    - PATCH
+                    - DELETE
+                headers:
+                  type: object
+                  additionalProperties:
+                    type: string
+                body:
+                  type: object
+      responses:
+        "200":
+          description: Relayed response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /spell-check:
+    post:
+      tags:
+        - Spell Check
+      operationId: spellCheck
+      summary: Check spelling and grammar in text
+      description: >
+        Detects spelling errors with ranked correction suggestions. Supports English, Spanish, French, German, and
+        Italian. Also catches grammar patterns such as repeated words and spacing errors.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - text
+              properties:
+                text:
+                  type: string
+                  example: Ths is a smple sntence.
+                language:
+                  type: string
+                  enum:
+                    - en
+                    - es
+                    - fr
+                    - de
+                    - it
+                  default: en
+      responses:
+        "200":
+          description: Spell check results with correction suggestions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /spell-check/batch:
+    post:
+      tags:
+        - Spell Check
+      operationId: spellCheckBatch
+      summary: Spell check multiple texts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - texts
+              properties:
+                texts:
+                  type: array
+                  items:
+                    type: string
+                  maxItems: 100
+                language:
+                  type: string
+                  enum:
+                    - en
+                    - es
+                    - fr
+                    - de
+                    - it
+                  default: en
+      responses:
+        "200":
+          description: Spell check results for each text
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /spell-check/languages:
+    get:
+      tags:
+        - Spell Check
+      operationId: spellCheckLanguages
+      summary: List supported languages for spell checking
+      responses:
+        "200":
+          description: Supported language list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /states/states:
+    get:
+      tags:
+        - States
+      operationId: statesList
+      summary: List or search U.S. states
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: Search by state name or abbreviation
+          schema:
+            type: string
+            example: California
+      responses:
+        "200":
+          description: List of U.S. states with metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /states/states/{abbr}:
+    get:
+      tags:
+        - States
+      operationId: stateByAbbr
+      summary: Get U.S. state by 2-letter abbreviation
+      parameters:
+        - name: abbr
+          in: path
+          required: true
+          description: 2-letter state abbreviation
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 2
+            example: CA
+      responses:
+        "200":
+          description: State metadata (name, FIPS, capital, region, population, area)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /states/fips/{fipscode}:
+    get:
+      tags:
+        - States
+      operationId: stateByFips
+      summary: Get U.S. state by FIPS code
+      parameters:
+        - name: fipscode
+          in: path
+          required: true
+          description: 2-digit FIPS state code
+          schema:
+            type: string
+            example: "06"
+      responses:
+        "200":
+          description: State metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /text-language/detect:
+    post:
+      tags:
+        - Text Language
+      operationId: textLanguageDetect
+      summary: Detect the language of a text input
+      description: >
+        Identifies the language of text with a confidence score. Supports 176+ languages with ISO 639-3 output. Requires
+        at least 10 characters for reliable detection.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - text
+              properties:
+                text:
+                  type: string
+                  minLength: 10
+                  example: The quick brown fox jumps over the lazy dog
+                format:
+                  type: string
+                  enum:
+                    - iso639-3
+                    - iso639-1
+                  default: iso639-3
+                min_confidence:
+                  type: number
+                  minimum: 0
+                  maximum: 1
+                  description: Minimum confidence threshold
+      responses:
+        "200":
+          description: Detected language with ISO code and confidence score
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /text-language/detect-batch:
+    post:
+      tags:
+        - Text Language
+      operationId: textLanguageDetectBatch
+      summary: Batch language detection for multiple texts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - texts
+              properties:
+                texts:
+                  type: array
+                  items:
+                    type: string
+                    minLength: 10
+                  maxItems: 100
+      responses:
+        "200":
+          description: Language detection results for each text
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /text-language/supported:
+    get:
+      tags:
+        - Text Language
+      operationId: textLanguageSupported
+      summary: List all supported languages
+      description: Returns all 176+ supported languages with ISO 639-1 and ISO 639-3 codes.
+      responses:
+        "200":
+          description: Supported language list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /thesaurus:
+    get:
+      tags:
+        - Thesaurus
+      operationId: thesaurusLookup
+      summary: Look up synonyms, antonyms, or related words
+      description: >
+        Returns synonyms, antonyms, or both for a given word. Filter results by part of speech and limit the number of
+        results.
+      parameters:
+        - name: word
+          in: query
+          required: true
+          description: The word to look up
+          schema:
+            type: string
+            example: happy
+        - name: type
+          in: query
+          required: false
+          description: Result type — synonyms, antonyms, or both
+          schema:
+            type: string
+            enum:
+              - synonyms
+              - antonyms
+              - both
+            default: synonyms
+        - name: pos
+          in: query
+          required: false
+          description: Part of speech filter
+          schema:
+            type: string
+            enum:
+              - noun
+              - verb
+              - adjective
+              - adverb
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of results (default 20)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Thesaurus results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /unit-conversion/convert:
+    get:
+      tags:
+        - Unit Conversion
+      operationId: unitConvertGet
+      summary: Convert a value between units
+      description: >
+        Supports 100+ unit types across length, weight, temperature, volume, area, speed, digital storage, and time.
+        Converts value from source unit to target unit.
+      parameters:
+        - name: from
+          in: query
+          required: true
+          description: Source unit identifier (e.g. kg, lb, m, degC, km/h)
+          schema:
+            type: string
+            example: kg
+        - name: to
+          in: query
+          required: true
+          description: Target unit identifier
+          schema:
+            type: string
+            example: lb
+        - name: value
+          in: query
+          required: true
+          schema:
+            type: number
+            example: 10
+        - name: precision
+          in: query
+          required: false
+          description: Decimal places in result (0-15)
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 15
+            default: 4
+      responses:
+        "200":
+          description: Conversion result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+    post:
+      tags:
+        - Unit Conversion
+      operationId: unitConvertPost
+      summary: Convert a value between units (POST)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - from
+                - to
+                - value
+              properties:
+                from:
+                  type: string
+                  example: kg
+                to:
+                  type: string
+                  example: lb
+                value:
+                  type: number
+                  example: 10
+                precision:
+                  type: integer
+                  minimum: 0
+                  maximum: 15
+      responses:
+        "200":
+          description: Conversion result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /unit-conversion/categories:
+    get:
+      tags:
+        - Unit Conversion
+      operationId: unitCategories
+      summary: List available measurement categories
+      responses:
+        "200":
+          description: Category list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /unit-conversion/units/{category}:
+    get:
+      tags:
+        - Unit Conversion
+      operationId: unitsByCategory
+      summary: List units available in a category
+      parameters:
+        - name: category
+          in: path
+          required: true
+          description: Measurement category (e.g. length, weight, temperature)
+          schema:
+            type: string
+            example: length
+      responses:
+        "200":
+          description: Unit list for the category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /user-avatar:
+    get:
+      tags:
+        - User Avatar
+      operationId: userAvatarGenerate
+      summary: Generate a customizable user avatar image
+      description: >
+        Creates avatar images using Canvas (PNG/WebP) or native SVG. Supports initials-based avatars, custom colors,
+        external image integration, and uploaded icons.
+      parameters:
+        - name: name
+          in: query
+          required: false
+          description: Display name to generate initials from
+          schema:
+            type: string
+            example: John Doe
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - png
+              - webp
+              - svg
+            default: png
+        - name: size
+          in: query
+          required: false
+          description: Avatar size in pixels (16–512)
+          schema:
+            type: integer
+            minimum: 16
+            maximum: 512
+            default: 128
+        - name: background
+          in: query
+          required: false
+          description: Background color hex without
+          schema:
+            type: string
+            pattern: ^[0-9A-Fa-f]{6}$
+            example: 4A90D9
+        - name: color
+          in: query
+          required: false
+          description: Text/icon color hex without
+          schema:
+            type: string
+            pattern: ^[0-9A-Fa-f]{6}$
+            example: FFFFFF
+        - name: rounded
+          in: query
+          required: false
+          description: Output a circular avatar
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Avatar image binary or SVG markup
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+            image/svg+xml:
+              schema:
+                type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /user-avatar/upload-icon:
+    post:
+      tags:
+        - User Avatar
+      operationId: userAvatarUploadIcon
+      summary: Upload a custom icon for avatar generation
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Icon image file (PNG, SVG, or WebP, max 1MB)
+      responses:
+        "200":
+          description: Upload confirmation with icon ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /validate-ip/validate:
+    get:
+      tags:
+        - Validate IP
+      operationId: validateIpGet
+      summary: Validate and classify IP addresses
+      description: >
+        Validates IPv4, IPv6, or CIDR notation and returns classification flags: private, reserved, loopback, multicast,
+        link-local, bogon, and public. Supports comma-separated batch input (max 100).
+      parameters:
+        - name: ip
+          in: query
+          required: true
+          description: Single IP, CIDR notation, or comma-separated list (max 100)
+          schema:
+            type: string
+            example: 8.8.8.8
+      responses:
+        "200":
+          description: Validation and classification results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+    post:
+      tags:
+        - Validate IP
+      operationId: validateIpPost
+      summary: Validate and classify IP addresses (POST)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ip
+              properties:
+                ip:
+                  description: Single IP string or array of IPs
+                  oneOf:
+                    - type: string
+                      example: 8.8.8.8
+                    - type: array
+                      items:
+                        type: string
+                      maxItems: 100
+      responses:
+        "200":
+          description: Validation results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /vin-lookup/decode:
+    post:
+      tags:
+        - VIN Lookup
+      operationId: vinDecode
+      summary: Decode one or more VINs using the NHTSA database
+      description: >
+        Decodes 17-character Vehicle Identification Numbers using the official NHTSA vPIC database. Validates ISO 3779
+        check digit. Supports single VIN or batch array (max 50).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - vin
+              properties:
+                vin:
+                  description: Single VIN string or array of VINs (max 50)
+                  oneOf:
+                    - type: string
+                      minLength: 17
+                      maxLength: 17
+                      example: 1HGCM82633A004352
+                    - type: array
+                      items:
+                        type: string
+                        minLength: 17
+                        maxLength: 17
+                      maxItems: 50
+      responses:
+        "200":
+          description: Decoded vehicle data (make, model, year, trim, engine, drivetrain)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /vin-lookup/sample/{vin}:
+    get:
+      tags:
+        - VIN Lookup
+      operationId: vinSampleGet
+      summary: Decode a single VIN via GET
+      parameters:
+        - name: vin
+          in: path
+          required: true
+          description: 17-character VIN
+          schema:
+            type: string
+            minLength: 17
+            maxLength: 17
+            example: 1HGCM82633A004352
+      responses:
+        "200":
+          description: Decoded vehicle data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /vin-lookup/makes:
+    get:
+      tags:
+        - VIN Lookup
+      operationId: vinMakes
+      summary: List all vehicle makes in the NHTSA database
+      responses:
+        "200":
+          description: Vehicle make list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /vin-lookup/suggest/{prefix}:
+    get:
+      tags:
+        - VIN Lookup
+      operationId: vinSuggest
+      summary: Get VIN prefix suggestions for autocomplete
+      parameters:
+        - name: prefix
+          in: path
+          required: true
+          description: VIN prefix string (partial VIN)
+          schema:
+            type: string
+            example: 1HGC
+      responses:
+        "200":
+          description: VIN suggestions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /web-screenshot:
+    get:
+      tags:
+        - Web Screenshot
+      operationId: webScreenshot
+      summary: Capture a screenshot of a web page
+      description: >
+        Renders a web page via Puppeteer headless browser and returns a screenshot. Supports viewport simulation, format
+        selection, quality control, and crop.
+      parameters:
+        - name: url
+          in: query
+          required: true
+          description: Target URL including http/https scheme
+          schema:
+            type: string
+            format: uri
+            example: https://example.com
+        - name: width
+          in: query
+          required: false
+          description: Viewport width in pixels (100–3840, default 1280)
+          schema:
+            type: integer
+            minimum: 100
+            maximum: 3840
+            default: 1280
+        - name: height
+          in: query
+          required: false
+          description: Viewport height in pixels (100–2160, default 800)
+          schema:
+            type: integer
+            minimum: 100
+            maximum: 2160
+            default: 800
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - jpeg
+              - png
+              - webp
+            default: jpeg
+        - name: quality
+          in: query
+          required: false
+          description: Image quality (10–100, default 100; ignored for PNG)
+          schema:
+            type: integer
+            minimum: 10
+            maximum: 100
+            default: 100
+        - name: crop
+          in: query
+          required: false
+          description: Crop dimensions as WIDTHxHEIGHT (e.g. 800x600)
+          schema:
+            type: string
+            example: 800x600
+      responses:
+        "200":
+          description: Screenshot image binary
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /whois/lookup:
+    post:
+      tags:
+        - WHOIS
+      operationId: whoisLookup
+      summary: Perform WHOIS lookup for one or multiple domains
+      description: >
+        Returns registrar, registration date, expiration date, name servers, and raw WHOIS data. Supports single domain
+        or batch array (max 50).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - domain
+              properties:
+                domain:
+                  description: Single domain string or array (max 50)
+                  oneOf:
+                    - type: string
+                      example: example.com
+                    - type: array
+                      items:
+                        type: string
+                      maxItems: 50
+      responses:
+        "200":
+          description: WHOIS registration data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /working-days/calculate:
+    post:
+      tags:
+        - Working Days
+      operationId: workingDaysCalculatePost
+      summary: Calculate working days between dates or offset business days
+      description: >
+        For range calculations: provide start_date and end_date to get the number of working days between them. For
+        offset calculations: provide start_date and days_offset to find the resulting business date. Supports US, DE,
+        and IN regional holiday calendars.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - start_date
+              properties:
+                start_date:
+                  type: string
+                  format: date
+                  example: "2026-01-01"
+                end_date:
+                  type: string
+                  format: date
+                  example: "2026-01-31"
+                days_offset:
+                  type: integer
+                  description: Working days to add (positive) or subtract (negative)
+                  example: 10
+                direction:
+                  type: string
+                  enum:
+                    - forward
+                    - backward
+                  default: forward
+                region:
+                  type: string
+                  description: Regional holiday calendar
+                  enum:
+                    - US
+                    - DE
+                    - IN
+                  default: US
+      responses:
+        "200":
+          description: Working day calculation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+    get:
+      tags:
+        - Working Days
+      operationId: workingDaysCalculateGet
+      summary: Calculate working days (GET)
+      parameters:
+        - name: start_date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2026-01-01"
+        - name: end_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: days_offset
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: region
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - US
+              - DE
+              - IN
+            default: US
+      responses:
+        "200":
+          description: Working day calculation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /working-days/calculate/batch:
+    get:
+      tags:
+        - Working Days
+      operationId: workingDaysBatch
+      summary: Batch working day calculations
+      parameters:
+        - name: requests
+          in: query
+          required: true
+          description: JSON-encoded array of calculation requests
+          schema:
+            type: string
+            example: "[{\"start_date\":\"2026-01-01\",\"end_date\":\"2026-01-31\"}]"
+      responses:
+        "200":
+          description: Batch calculation results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /generate:
+    post:
+      tags:
+        - Sample Data
+      operationId: sampleDataGeneratePost
+      summary: Generate sample data
+      description: >-
+        Generate realistic mock data using a JSON request body. Recommended for full control over type, count, fields,
+        and format.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - type
+              properties:
+                type:
+                  type: string
+                  description: Schema type to generate, such as user, company, product, or transaction.
+                count:
+                  type: integer
+                  minimum: 1
+                  maximum: 10000
+                  default: 1
+                fields:
+                  type: array
+                  items:
+                    type: string
+                  description: Optional field names to include.
+                format:
+                  type: string
+                  enum:
+                    - json
+                    - csv
+                  default: json
+      responses:
+        "200":
+          description: Generated sample data records
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /generate-batch:
+    post:
+      tags:
+        - Sample Data
+      operationId: sampleDataGenerateBatchPost
+      summary: Generate multiple sample datasets
+      description: Submit multiple sample-data generation requests in one call.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - requests
+              properties:
+                requests:
+                  type: array
+                  maxItems: 10
+                  items:
+                    type: object
+                    required:
+                      - type
+                    properties:
+                      type:
+                        type: string
+                      count:
+                        type: integer
+                        minimum: 1
+                        maximum: 1000
+                        default: 1
+                      fields:
+                        type: array
+                        items:
+                          type: string
+                      format:
+                        type: string
+                        enum:
+                          - json
+                          - csv
+                        default: json
+      responses:
+        "200":
+          description: Generated data records grouped by request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /sample-data:
+    get:
+      tags:
+        - Sample Data
+      operationId: sampleDataGenerateGet
+      summary: Generate sample data with query parameters
+      description: GET-compatible sample data generation endpoint for scripts and browser testing.
+      parameters:
+        - name: type
+          in: query
+          required: true
+          description: Schema type to generate, such as user, company, product, or transaction.
+          schema:
+            type: string
+        - name: count
+          in: query
+          required: false
+          description: Number of records to generate.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10000
+            default: 1
+        - name: fields
+          in: query
+          required: false
+          description: Comma-separated list of fields to include.
+          schema:
+            type: string
+        - name: format
+          in: query
+          required: false
+          description: Response format.
+          schema:
+            type: string
+            enum:
+              - json
+              - csv
+            default: json
+      responses:
+        "200":
+          description: Generated sample data records
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /schemas:
+    get:
+      tags:
+        - Sample Data
+      operationId: sampleDataSchemas
+      summary: List sample data schemas
+      description: Returns all available sample-data schema names with default field lists.
+      responses:
+        "200":
+          description: Available sample-data schemas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /ip-intelligence/batch/info:
+    get:
+      tags:
+        - IP Intelligence
+      operationId: ipIntelligenceBatchInfo
+      summary: Get IP intelligence batch configuration
+      description: Returns batch processing limits, example request shape, and response schema details.
+      responses:
+        "200":
+          description: Batch processing configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+  /image-processing:
+    get:
+      tags:
+        - Image Processing
+      operationId: imageProcessingInfo
+      summary: Get image processing service information
+      description: Returns supported image operations, formats, and service metadata.
+      responses:
+        "200":
+          description: Image processing service information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/ServiceUnavailable"
+components:
+  securitySchemes:
+    ApiKeyHeader:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: API key passed via x-api-key request header
+    ApiKeyQuery:
+      type: apiKey
+      in: query
+      name: api_key
+      description: API key passed as api_key query parameter
+  responses:
+    BadRequest:
+      description: Bad request — missing or invalid parameters
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Unauthorized — missing or invalid API key
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    RateLimited:
+      description: Rate limit exceeded — retry after the indicated period
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    PayloadTooLarge:
+      description: Request payload too large
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ServiceUnavailable:
+      description: Service temporarily unavailable
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+          example: Invalid API key
+        correlationId:
+          type: string
+          description: Request tracking identifier for support
+          example: abc123-def456-789ghi
+        service:
+          type: string
+          description: Service name that produced the error
+          example: ip-geolocation
+    GenericSuccess:
+      type: object
+      description: Standard success envelope. The data property structure varies by endpoint.
+      properties:
+        correlationId:
+          type: string
+          description: Request tracking identifier
+          example: abc123-def456
+        data:
+          type: object
+          description: Response payload (structure varies by endpoint)
+        cached:
+          type: boolean
+          description: Whether the response was served from cache
+          example: false
+    AircraftRecord:
+      type: object
+      description: FAA aircraft registry record
+      properties:
+        correlationId:
+          type: string
+        tail:
+          type: string
+          description: FAA tail/N-number
+          example: N12345
+        valid:
+          type: boolean
+          description: Whether the registration is currently valid
+        manufacturer:
+          type: string
+          example: BOEING
+        model:
+          type: string
+          example: 737-800
+        type:
+          type: string
+          example: Fixed Wing Multi-Engine
+        year:
+          type: integer
+          example: 2005
+        owner:
+          type: string
+          example: AIRLINE INC
+        hex:
+          type: string
+          description: ICAO hex code
+          example: A1B2C3
+        country:
+          type: string
+          example: US
+        status:
+          type: string
+          enum:
+            - valid
+            - invalid
+            - deregistered
+            - unknown

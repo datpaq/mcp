@@ -1,0 +1,19 @@
+{
+  "_comment": "Maintained for the datpaq CLI. The CLI shows ONLY these interfaces in discovery commands (datpaq api, datpaq sample, splash). Inactive interfaces are still callable directly (e.g. `datpaq aircraft lookup-by-tail` works regardless) so existing scripts don't break. Source of truth is the admin dashboard's `isActive` field — keep this file in sync. Eventually a script can regenerate this from the DB; for now it's hand-edited.",
+  "_schema": "v1",
+  "active": [
+    "convert-time",
+    "current-time",
+    "image-processing",
+    "ip-geolocation",
+    "ip-intelligence",
+    "profanity",
+    "sample-data",
+    "unit-conversion",
+    "user-avatar",
+    "validate-ip",
+    "web-screenshot",
+    "whois",
+    "working-days"
+  ]
+}
