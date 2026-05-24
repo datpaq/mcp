@@ -30,16 +30,18 @@ Or pull the Docker image:
 
 ```bash
 docker build -t datpaq-mcp-http -f cmd/datpaq-mcp-http/Dockerfile .
-docker run -p 8080:8080 -e DATPAQ_API_KEY=... datpaq-mcp-http
+docker run -p 8080:8080 datpaq-mcp-http
 ```
 
 ## Quickstart
 
 ```bash
-DATPAQ_API_KEY=your_key datpaq-mcp-http --addr :8080
+datpaq-mcp-http --addr :8080
 ```
 
 Then point an MCP client at `http://localhost:8080/mcp`.
+
+**Auth model:** the server is bring-your-own-key per request, not per server. Every request must present a Datpaq API key as `Authorization: Bearer <key>`; the server doesn't read or store a server-wide credential. A single self-hosted instance can serve multiple tenants, each billed against their own Datpaq account.
 
 ## Deploy
 
@@ -47,9 +49,10 @@ Ships with a [Fly.io](https://fly.io) config:
 
 ```bash
 fly launch --config fly.toml
-fly secrets set DATPAQ_API_KEY=your_key
 fly deploy
 ```
+
+No secrets to configure — clients authenticate per request.
 
 ## What's exposed
 
@@ -63,9 +66,10 @@ Tools that depend on local state or shell-out to the user's machine (auth flows,
 
 | Variable | Purpose |
 | --- | --- |
-| `DATPAQ_API_KEY` | API credential used for all downstream calls — required |
 | `DATPAQ_BASE_URL` | Override the API base URL (default: `https://datpaq.com/api/v1`) — handy for pointing at staging |
 | `PORT` | HTTP listen port (default: `8080`, also configurable via `--addr`) |
+
+The Datpaq API key is **not** a server-side variable. Each request must include it as `Authorization: Bearer <key>`. See the Quickstart auth model.
 
 ## Managing active APIs
 
