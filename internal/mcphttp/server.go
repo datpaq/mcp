@@ -40,6 +40,8 @@ import (
 //
 //	GET  /healthz  → 200 {"ok":true}
 //	*    /mcp      → MCP streamable-http endpoint (requires Bearer)
+//	POST /         → same as /mcp (so the bare subdomain works)
+//	GET  /         → 302 → https://datpaq.com/docs/mcp
 func NewHandler(baseURL string) http.Handler {
 	mcpServer := server.NewMCPServer(
 		"Datpaq Proapi",
@@ -59,6 +61,23 @@ func NewHandler(baseURL string) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", healthz)
 	mux.Handle("/mcp", requireBearer(httpServer))
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// ServeMux routes anything not matched by /healthz or /mcp here.
+		// Only `/` itself is meaningful; deeper paths are 404.
+		if r.URL.Path != "/" {
+			http.NotFound(w, r)
+			return
+		}
+		// MCP clients POST JSON-RPC. Route through the same auth +
+		// handler chain as /mcp so the bare subdomain is a working
+		// endpoint — avoids a redirect that some clients fumble on
+		// POST (RFC 7231 §6.4.2: 301 may downgrade POST→GET).
+		if r.Method == http.MethodPost {
+			requireBearer(httpServer).ServeHTTP(w, r)
+			return
+		}
+		http.Redirect(w, r, "https://datpaq.com/docs/mcp", http.StatusFound)
+	})
 	return mux
 }
 
