@@ -8,23 +8,97 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/datpaq/mcp)](https://goreportcard.com/report/github.com/datpaq/mcp)
 [![License](https://img.shields.io/badge/license-Apache_2.0-6b21a8.svg)](LICENSE)
 
-[Install](#install) · [Deploy](#deploy) · [Configuration](#configuration) · [Dashboard ↗](https://datpaq.com)
+[Connect](#connect) · [Configure your client](#configure-your-client) · [Self-host](#self-host) · [Dashboard ↗](https://datpaq.com)
 
 </div>
 
 ---
 
-`datpaq-mcp-http` exposes the Datpaq API as MCP tools over HTTP, so any MCP-compatible client (Claude, IDE plugins, agent frameworks) can call Datpaq endpoints with a single connection.
+Hosted at **<https://mcp.datpaq.com/>** — also installable locally and self-hostable.
+
+`datpaq-mcp-http` exposes the Datpaq API as MCP tools over streamable HTTP, so any MCP-compatible client (Claude Desktop, Cursor, Codex, Cline, Continue, agent frameworks) can call Datpaq endpoints with a single connection.
 
 For the **local CLI** (and the stdio MCP that ships with it for Claude Desktop), see [`github.com/datpaq/cli`](https://github.com/datpaq/cli).
 
-## Install
+## Connect
+
+| | |
+| --- | --- |
+| **URL** | `https://mcp.datpaq.com/` |
+| **Transport** | streamable HTTP |
+| **Auth** | `Authorization: Bearer YOUR_DATPAQ_API_KEY` (per request) |
+| **Tools** | 34 hosted tools across 13 active APIs |
+
+Verify with `curl`:
+
+```bash
+curl -s -X POST https://mcp.datpaq.com/ \
+  -H "Authorization: Bearer $YOUR_DATPAQ_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"curl","version":"0"}}}'
+```
+
+**Auth model:** every request must present a Datpaq API key as `Authorization: Bearer <key>` — the server holds no credentials of its own, so a single instance can serve many tenants, each billed against their own Datpaq account.
+
+## Configure your client
+
+**Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "datpaq": {
+      "url": "https://mcp.datpaq.com/",
+      "headers": {
+        "Authorization": "Bearer YOUR_DATPAQ_API_KEY"
+      }
+    }
+  }
+}
+```
+
+**Cursor** (`~/.cursor/mcp.json` or project `.cursor/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "datpaq": {
+      "url": "https://mcp.datpaq.com/",
+      "headers": {
+        "Authorization": "Bearer YOUR_DATPAQ_API_KEY"
+      }
+    }
+  }
+}
+```
+
+**Codex CLI:**
+
+```bash
+export DATPAQ_API_KEY="YOUR_DATPAQ_API_KEY"
+codex mcp add datpaq --url https://mcp.datpaq.com/ --bearer-token-env-var DATPAQ_API_KEY
+```
+
+**Codex TOML:**
+
+```toml
+[mcp_servers.datpaq]
+url = "https://mcp.datpaq.com/"
+bearer_token_env_var = "YOUR_DATPAQ_API_KEY"
+```
+
+For full step-by-step instructions per client (including Cline and Continue), see the [Datpaq MCP docs](https://datpaq.com/docs/mcp).
+
+## Self-host
+
+Install via Go:
 
 ```bash
 go install github.com/datpaq/mcp/cmd/datpaq-mcp-http@latest
 ```
 
-Requires Go 1.22+.
+Requires Go 1.26.3+.
 
 Or pull the Docker image:
 
@@ -33,19 +107,15 @@ docker build -t datpaq-mcp-http -f cmd/datpaq-mcp-http/Dockerfile .
 docker run -p 8080:8080 datpaq-mcp-http
 ```
 
-## Quickstart
+Run it:
 
 ```bash
 datpaq-mcp-http --addr :8080
 ```
 
-Then point an MCP client at `http://localhost:8080/mcp`.
+Then point an MCP client at `http://localhost:8080/`.
 
-**Auth model:** the server is bring-your-own-key per request, not per server. Every request must present a Datpaq API key as `Authorization: Bearer <key>`; the server doesn't read or store a server-wide credential. A single self-hosted instance can serve multiple tenants, each billed against their own Datpaq account.
-
-## Deploy
-
-Ships with a [Fly.io](https://fly.io) config:
+Ships with a [Fly.io](https://fly.io) config for one-command deploys:
 
 ```bash
 fly launch --config fly.toml

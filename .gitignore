@@ -29,3 +29,10 @@ go.work.sum
 
 # Printing-press run state
 .runstate/
+
+# AI / agent tools (per-developer local state — project-level AGENTS.md
+# stays tracked, since it's the shared Codex/agent contributor doc)
+.claude/
+.codex/
+.cursor/
+.copilot/
