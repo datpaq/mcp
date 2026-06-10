@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
-# Mirror internal/cli/active-apis.json to the datpaq/cli repo.
+# Mirror internal/cli/active-apis.json MCP → datpaq/cli (reverse direction).
+#
+# Prefer regenerating in the CLI repo first:
+#   cd ../CLI && make fetch-active-apis && make sync-active-apis
+# That copies CLI → MCP. Use this script only when you edited the
+# manifest here by mistake and need to push the fix back to CLI.
 #
 # Usage: ./scripts/sync-active-apis.sh [path-to-cli-repo]
 # Default target: ../CLI (sibling layout)
 #
-# Workflow: edit the file in this repo, commit, then run this script.
-# It copies the file to the CLI repo working tree but does NOT commit
+# Copies the file to the CLI repo working tree but does NOT commit
 # there — review and commit in the CLI repo manually.
 
 set -euo pipefail

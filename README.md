@@ -143,7 +143,7 @@ The Datpaq API key is **not** a server-side variable. Each request must include 
 
 ## Managing active APIs
 
-The single source of truth for which endpoints are exposed is [`internal/cli/active-apis.json`](internal/cli/active-apis.json):
+The active set is curated in [`internal/cli/active-apis.json`](internal/cli/active-apis.json). The **CLI repo is the canonical place to regenerate** that manifest from the admin dashboard export (or, in Phase 2, `GET /api/v1/catalog/active`). This repo receives updates via sync — it does not ship its own fetch tooling.
 
 ```json
 {
@@ -155,11 +155,20 @@ The single source of truth for which endpoints are exposed is [`internal/cli/act
 }
 ```
 
-Edit the file, rebuild or redeploy. The same file lives in [`github.com/datpaq/cli`](https://github.com/datpaq/cli) — keep both in sync when adding a new API. If the CLI repo is checked out as a sibling directory, mirror the file with:
+**Canonical workflow** (sibling checkout at `../CLI`):
 
 ```bash
-./scripts/sync-active-apis.sh
+# In the CLI repo
+cd ../CLI
+make fetch-active-apis CATALOG_INPUT=./export.json   # or CATALOG_URL=... after Phase 2
+make sync-active-apis                                 # CLI → MCP
+
+# Then here
+make build && make test
+# commit internal/cli/active-apis.json + code changes, deploy
 ```
+
+If you edited `active-apis.json` in this repo by mistake, push it back to CLI with `./scripts/sync-active-apis.sh` (MCP → CLI only). Prefer the CLI-first flow above for normal updates.
 
 ## Development
 

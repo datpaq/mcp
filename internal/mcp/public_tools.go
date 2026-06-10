@@ -16,12 +16,26 @@
 package mcp
 
 import (
+	"sort"
 	"strings"
+	"sync"
 
 	"github.com/datpaq/mcp/internal/cli"
 	"github.com/datpaq/mcp/internal/mcp/cobratree"
 	"github.com/mark3labs/mcp-go/server"
 )
+
+var (
+	knownInterfacesOnce sync.Once
+	knownInterfaces     []string
+)
+
+func loadKnownInterfaces() []string {
+	knownInterfacesOnce.Do(func() {
+		knownInterfaces = cli.KnownInterfaceSlugs(cli.RootCmd())
+	})
+	return knownInterfaces
+}
 
 // localStateToolNames are tools registered by RegisterTools that read
 // local filesystem state (the sibling SQLite DB) or otherwise depend
@@ -69,16 +83,16 @@ func RegisterPublicTools(s *server.MCPServer) {
 //
 // API-mirror tool names follow `{slug}_{action}` where slug is a
 // hyphen-cased interface identifier ("convert-time",
-// "image-processing", "aircraft") and action is whatever comes
-// after. The slug never contains underscores, so splitting on the
-// first '_' is sufficient. Tools with no underscore at all (e.g.
-// the framework tools we already deleted) are skipped — they're
-// not subject to activation gating.
+// "image-processing", "generate-batch"). Slugs may contain hyphens
+// and must be matched with longest-prefix against the live Cobra
+// tree — naive first-underscore splitting mis-identifies slugs like
+// "generate-batch". Tools that do not map to a known interface slug
+// are skipped.
 func inactiveAPIToolNames(s *server.MCPServer) []string {
 	var out []string
 	for name := range s.ListTools() {
-		slug := interfaceSlugFromToolName(name)
-		if slug == "" {
+		slug, ok := mcpToolInterfaceSlug(name)
+		if !ok {
 			continue
 		}
 		if !cli.IsActiveInterface(slug) {
@@ -88,10 +102,34 @@ func inactiveAPIToolNames(s *server.MCPServer) []string {
 	return out
 }
 
-func interfaceSlugFromToolName(name string) string {
-	i := strings.IndexByte(name, '_')
-	if i <= 0 {
+func mcpToolInterfaceSlug(toolName string) (string, bool) {
+	toolName = strings.ToLower(strings.TrimSpace(toolName))
+	if toolName == "" {
+		return "", false
+	}
+	if slug := matchKnownInterfaceSlug(toolName); slug != "" {
+		return slug, true
+	}
+	return "", false
+}
+
+func matchKnownInterfaceSlug(toolName string) string {
+	slugs := loadKnownInterfaces()
+	if len(slugs) == 0 {
 		return ""
 	}
-	return name[:i]
+	ordered := append([]string(nil), slugs...)
+	sort.Slice(ordered, func(i, j int) bool {
+		return len(ordered[i]) > len(ordered[j])
+	})
+	for _, slug := range ordered {
+		if toolName == slug || strings.HasPrefix(toolName, slug+"_") {
+			return slug
+		}
+		underscore := strings.ReplaceAll(slug, "-", "_")
+		if toolName == underscore || strings.HasPrefix(toolName, underscore+"_") {
+			return slug
+		}
+	}
+	return ""
 }
