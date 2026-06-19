@@ -4,9 +4,13 @@
   "active": [
     "convert-time",
     "current-time",
+    "dns",
+    "domain-lookup",
     "image-processing",
     "ip-geolocation",
     "ip-intelligence",
+    "mac-address",
+    "mx-lookup",
     "profanity",
     "sample-data",
     "unit-conversion",
