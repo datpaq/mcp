@@ -28,6 +28,15 @@ func TestListActiveInterfacesSorted(t *testing.T) {
 	}
 }
 
+
+func TestNewLookupAPIsAreActive(t *testing.T) {
+	for _, slug := range []string{"dns", "domain-lookup", "mac-address", "mx-lookup"} {
+		if !IsActiveInterface(slug) {
+			t.Errorf("expected %q in active-apis.json", slug)
+		}
+	}
+}
+
 func TestKnownInterfaceSlugsIncludesInactive(t *testing.T) {
 	known := KnownInterfaceSlugs(RootCmd())
 	foundActive, foundInactive := false, false
