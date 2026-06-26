@@ -1,0 +1,25 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "com.datpaq/datpaq",
+  "title": "DATPAQ",
+  "description": "34 production API tools (time, geo/IP intelligence, validation, image/screenshot, WHOIS, sample data) over one MCP endpoint.",
+  "version": "1.0.0",
+  "repository": {
+    "url": "https://github.com/datpaq/mcp",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.datpaq.com/mcp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Bearer <your DATPAQ API key>",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}
