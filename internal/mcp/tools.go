@@ -157,7 +157,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithDestructiveHintAnnotation(false),
 			mcplib.WithOpenWorldHintAnnotation(true),
 		),
-		makeAPIHandler("GET", "/dns", false, nil, []mcpParamBinding{{PublicName: "domain", WireName: "domain", Location: "query"}, {PublicName: "type", WireName: "type", Location: "query"}}, []string{}),
+		makeAPIHandler("GET", "/dns-lookup", false, nil, []mcpParamBinding{{PublicName: "domain", WireName: "domain", Location: "query"}, {PublicName: "type", WireName: "type", Location: "query"}}, []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("domain-lookup_get",
@@ -481,12 +481,12 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithDestructiveHintAnnotation(false),
 			mcplib.WithOpenWorldHintAnnotation(true),
 		),
-		makeAPIHandler("POST", "/mx-lookup/batch", false, nil, []mcpParamBinding{{PublicName: "domains", WireName: "domains", Location: "body"}}, []string{}),
+		makeAPIHandler("POST", "/mx-lookup", false, nil, []mcpParamBinding{{PublicName: "domains", WireName: "domains", Location: "body"}}, []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("mx-lookup_get",
-			mcplib.WithDescription("Returns mail exchange records with optional IP resolution, SMTP testing, and SPF extraction. Required: domain. Optional: resolve_ips (default: false), test_smtp (default: false), include_spf (default: false)."),
-			mcplib.WithString("domain", mcplib.Required(), mcplib.Description("Domain")),
+			mcplib.WithDescription("Returns mail exchange records with optional IP resolution, SMTP testing, and SPF extraction. Required: domains. Optional: resolve_ips (default: false), test_smtp (default: false), include_spf (default: false)."),
+			mcplib.WithString("domains", mcplib.Required(), mcplib.Description("Domain or comma-separated domains")),
 			mcplib.WithBoolean("resolve_ips", mcplib.Description("Resolve ips")),
 			mcplib.WithBoolean("test_smtp", mcplib.Description("Test smtp")),
 			mcplib.WithBoolean("include_spf", mcplib.Description("Include spf")),
@@ -494,19 +494,49 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithDestructiveHintAnnotation(false),
 			mcplib.WithOpenWorldHintAnnotation(true),
 		),
-		makeAPIHandler("GET", "/mx-lookup", false, nil, []mcpParamBinding{{PublicName: "domain", WireName: "domain", Location: "query"}, {PublicName: "resolve_ips", WireName: "resolve_ips", Location: "query"}, {PublicName: "test_smtp", WireName: "test_smtp", Location: "query"}, {PublicName: "include_spf", WireName: "include_spf", Location: "query"}}, []string{}),
+		makeAPIHandler("GET", "/mx-lookup", false, nil, []mcpParamBinding{{PublicName: "domains", WireName: "domains", Location: "query"}, {PublicName: "resolve_ips", WireName: "resolve_ips", Location: "query"}, {PublicName: "test_smtp", WireName: "test_smtp", Location: "query"}, {PublicName: "include_spf", WireName: "include_spf", Location: "query"}}, []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("mx-lookup_post",
-			mcplib.WithDescription("Look up MX records for a domain (POST). Required: domain. Optional: include_spf (default: false), resolve_ips (default: false), test_smtp (default: false). Returns the new GenericSuccess."),
-			mcplib.WithString("domain", mcplib.Required(), mcplib.Description("Domain")),
+			mcplib.WithDescription("Look up MX records for a domain (POST). Required: domains. Optional: include_spf (default: false), resolve_ips (default: false), test_smtp (default: false). Returns the new GenericSuccess."),
+			mcplib.WithString("domains", mcplib.Required(), mcplib.Description("Domain or comma-separated domains")),
 			mcplib.WithBoolean("include_spf", mcplib.Description("Include spf")),
 			mcplib.WithBoolean("resolve_ips", mcplib.Description("Resolve ips")),
 			mcplib.WithBoolean("test_smtp", mcplib.Description("Test smtp")),
 			mcplib.WithDestructiveHintAnnotation(false),
 			mcplib.WithOpenWorldHintAnnotation(true),
 		),
-		makeAPIHandler("POST", "/mx-lookup/lookup", false, nil, []mcpParamBinding{{PublicName: "domain", WireName: "domain", Location: "body"}, {PublicName: "include_spf", WireName: "include_spf", Location: "body"}, {PublicName: "resolve_ips", WireName: "resolve_ips", Location: "body"}, {PublicName: "test_smtp", WireName: "test_smtp", Location: "body"}}, []string{}),
+		makeAPIHandler("POST", "/mx-lookup", false, nil, []mcpParamBinding{{PublicName: "domains", WireName: "domains", Location: "body"}, {PublicName: "include_spf", WireName: "include_spf", Location: "body"}, {PublicName: "resolve_ips", WireName: "resolve_ips", Location: "body"}, {PublicName: "test_smtp", WireName: "test_smtp", Location: "body"}}, []string{}),
+	)
+	s.AddTool(
+		mcplib.NewTool("phone-validation_validate",
+			mcplib.WithDescription("Validate and format a phone number. Required: phone_number. Optional: country_code."),
+			mcplib.WithString("phone_number", mcplib.Required(), mcplib.Description("Phone number in international or national format")),
+			mcplib.WithString("country_code", mcplib.Description("Optional 2-letter ISO country code")),
+			mcplib.WithDestructiveHintAnnotation(false),
+			mcplib.WithOpenWorldHintAnnotation(true),
+		),
+		makeAPIHandler("POST", "/phone-validation/validate", false, nil, []mcpParamBinding{{PublicName: "phone_number", WireName: "phoneNumber", Location: "body"}, {PublicName: "country_code", WireName: "countryCode", Location: "body"}}, []string{}),
+	)
+	s.AddTool(
+		mcplib.NewTool("phone-validation_validate-batch",
+			mcplib.WithDescription("Validate multiple phone numbers. Required: phone_numbers. Optional: default_country_code."),
+			mcplib.WithArray("phone_numbers", mcplib.Required(), mcplib.Description("Phone numbers or objects with phoneNumber/countryCode")),
+			mcplib.WithString("default_country_code", mcplib.Description("Default 2-letter ISO country code for national numbers")),
+			mcplib.WithDestructiveHintAnnotation(false),
+			mcplib.WithOpenWorldHintAnnotation(true),
+		),
+		makeAPIHandler("POST", "/phone-validation/validate-batch", false, nil, []mcpParamBinding{{PublicName: "phone_numbers", WireName: "phoneNumbers", Location: "body"}, {PublicName: "default_country_code", WireName: "defaultCountryCode", Location: "body"}}, []string{}),
+	)
+	s.AddTool(
+		mcplib.NewTool("phone-validation_format",
+			mcplib.WithDescription("Format a phone number as you type. Required: phone_number. Optional: country_code."),
+			mcplib.WithString("phone_number", mcplib.Required(), mcplib.Description("Phone number to format")),
+			mcplib.WithString("country_code", mcplib.Description("Optional 2-letter ISO country code")),
+			mcplib.WithDestructiveHintAnnotation(false),
+			mcplib.WithOpenWorldHintAnnotation(true),
+		),
+		makeAPIHandler("POST", "/phone-validation/format", false, nil, []mcpParamBinding{{PublicName: "phone_number", WireName: "phoneNumber", Location: "body"}, {PublicName: "country_code", WireName: "countryCode", Location: "body"}}, []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("precious-metals_assets",
@@ -896,6 +926,17 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithOpenWorldHintAnnotation(true),
 		),
 		makeAPIHandler("GET", "/web-screenshot", true, map[string]string{"Accept": "image/jpeg"}, []mcpParamBinding{{PublicName: "url", WireName: "url", Location: "query"}, {PublicName: "width", WireName: "width", Location: "query"}, {PublicName: "height", WireName: "height", Location: "query"}, {PublicName: "format", WireName: "format", Location: "query"}, {PublicName: "quality", WireName: "quality", Location: "query"}, {PublicName: "crop", WireName: "crop", Location: "query"}}, []string{}),
+	)
+	s.AddTool(
+		mcplib.NewTool("web-scraping_scrape",
+			mcplib.WithDescription("Extract public web page content as JSON, Markdown, or HTML. Required: url. Optional: format (default: json), wait_until (default: networkidle2)."),
+			mcplib.WithString("url", mcplib.Required(), mcplib.Description("Public HTTP(S) URL to scrape")),
+			mcplib.WithString("format", mcplib.Description("Output format requested from the API: json, markdown, or html")),
+			mcplib.WithString("wait_until", mcplib.Description("Browser wait condition: load, domcontentloaded, networkidle0, or networkidle2")),
+			mcplib.WithDestructiveHintAnnotation(false),
+			mcplib.WithOpenWorldHintAnnotation(true),
+		),
+		makeAPIHandler("POST", "/web-scraping/scrape", false, nil, []mcpParamBinding{{PublicName: "url", WireName: "url", Location: "body"}, {PublicName: "format", WireName: "format", Location: "body"}, {PublicName: "wait_until", WireName: "waitUntil", Location: "body"}}, []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("whois_lookup",
@@ -1485,6 +1526,12 @@ func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToo
 				"searchable":  true,
 			},
 			{
+				"name":        "phone-validation",
+				"description": "Phone number validation, batch validation, and formatting",
+				"endpoints":   []string{"format", "validate", "validate-batch"},
+				"searchable":  true,
+			},
+			{
 				"name":        "precious-metals",
 				"description": "Precious metal and cryptocurrency pricing data",
 				"endpoints":   []string{"assets", "history", "prices"},
@@ -1579,6 +1626,12 @@ func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToo
 				"name":        "web-screenshot",
 				"description": "Web page screenshot capture via headless browser",
 				"endpoints":   []string{"web_screenshot"},
+				"searchable":  true,
+			},
+			{
+				"name":        "web-scraping",
+				"description": "SSRF-safe public web page content extraction",
+				"endpoints":   []string{"scrape"},
 				"searchable":  true,
 			},
 			{

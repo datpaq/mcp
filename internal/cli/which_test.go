@@ -50,6 +50,16 @@ func TestRankWhich_MultiTokenQuery(t *testing.T) {
 	}
 }
 
+func TestRankWhich_NormalizesGeneratedCommandSeparators(t *testing.T) {
+	got := rankWhich(whichIndex, "mx lookup", 3)
+	if len(got) == 0 {
+		t.Fatalf("expected at least one match, got zero")
+	}
+	if got[0].Entry.Group != "mx-lookup" {
+		t.Errorf("top match group: want mx-lookup, got %s (%+v)", got[0].Entry.Group, got)
+	}
+}
+
 // Edge case: empty query should surface the full index (listing mode)
 // rather than treating as no-match. Agents use this for broad discovery.
 func TestRankWhich_EmptyQueryListsIndex(t *testing.T) {

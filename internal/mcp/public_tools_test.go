@@ -53,15 +53,21 @@ func TestRegisterPublicTools_IncludesLookupAPIs(t *testing.T) {
 	}
 }
 
-func TestInactiveAPIToolNames_Aircraft(t *testing.T) {
-	if cli.IsActiveInterface("aircraft") {
-		t.Skip("aircraft is active in manifest; cannot test inactive filtering")
+func TestInactiveAPIToolNames_RemovesInactiveKnownInterface(t *testing.T) {
+	if cli.IsActiveInterface("schemas") {
+		t.Skip("schemas is active in manifest; cannot test inactive filtering")
 	}
-	slug, ok := mcpToolInterfaceSlug("aircraft_lookup-by-tail")
-	if !ok || slug != "aircraft" {
-		t.Fatalf("mcpToolInterfaceSlug(aircraft_lookup-by-tail) = (%q, %v)", slug, ok)
+	slug, ok := mcpToolInterfaceSlug("schemas_sample-data")
+	if !ok || slug != "schemas" {
+		t.Fatalf("mcpToolInterfaceSlug(schemas_sample-data) = (%q, %v)", slug, ok)
 	}
 	if cli.IsActiveInterface(slug) {
-		t.Fatal("aircraft should be inactive")
+		t.Fatal("schemas should be inactive")
+	}
+
+	s := server.NewMCPServer("datpaq", "test", server.WithToolCapabilities(true))
+	RegisterPublicTools(s)
+	if _, ok := s.ListTools()["schemas_sample-data"]; ok {
+		t.Fatal("inactive schemas_sample-data tool should be removed from public MCP surface")
 	}
 }

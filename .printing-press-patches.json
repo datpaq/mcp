@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "applied_at": "2026-06-10",
+  "applied_at": "2026-07-03",
   "base_run_id": "20260521-153730",
   "base_printing_press_version": "4.10.0",
   "patches": [
@@ -13,6 +13,111 @@
         "internal/mcp/public_tools.go"
       ],
       "validated_outcome": "go test ./..."
+    },
+    {
+      "id": "activate-supported-active-apis",
+      "summary": "Keep active-apis.json aligned with ProApi active services that have CLI/MCP support.",
+      "reason": "ProApi marks 35 services active. The manifest should surface all supported active APIs in hosted MCP filtering and CLI discovery.",
+      "files": [
+        "internal/cli/active-apis.json",
+        "internal/cli/active_apis_test.go",
+        "server.json"
+      ],
+      "validated_outcome": "go test ./internal/cli -run TestSupportedWebsiteActiveAPIsAreActive passes; server.json now advertises 35 production APIs."
+    },
+    {
+      "id": "active-phone-web-scraping-commands",
+      "summary": "Add hand-authored CLI and MCP support for active phone-validation and web-scraping services.",
+      "reason": "These services are active in ProApi but absent from the generated MCP spec, so manifest changes alone could not expose working hosted tools.",
+      "files": [
+        "internal/cli/phone-validation.go",
+        "internal/cli/phone-validation_validate.go",
+        "internal/cli/phone-validation_validate-batch.go",
+        "internal/cli/phone-validation_format.go",
+        "internal/cli/web-scraping.go",
+        "internal/cli/mutation_helpers.go",
+        "internal/cli/list_parse_helpers.go",
+        "internal/cli/root.go",
+        "internal/cli/which.go",
+        "internal/mcp/tools.go",
+        "internal/cli/active_api_support_test.go"
+      ],
+      "validated_outcome": "Focused tests assert request path/body construction for phone-validation and web-scraping; go test ./... passes."
+    },
+    {
+      "id": "dns-lookup-production-route",
+      "summary": "Route the DNS CLI and hosted MCP tool through the production /dns-lookup gateway path.",
+      "reason": "The independent review reproduced production 404s on /dns while /dns-lookup succeeds; CLI and MCP should call the working gateway route.",
+      "files": [
+        "internal/cli/promoted_dns.go",
+        "internal/mcp/tools.go",
+        "internal/cli/dns_lookup_test.go"
+      ],
+      "validated_outcome": "Focused DNS CLI test asserts GET /dns-lookup with domain/type query parameters and clean agent output."
+    },
+    {
+      "id": "machine-output-warning-gate",
+      "summary": "Suppress generated mutation partial-failure warnings in machine-readable output modes.",
+      "reason": "Agent, JSON, compact, quiet, plain, selected-field, and piped output must remain deterministic and should not be polluted by stderr warnings unless the user is in a human-facing table mode.",
+      "files": [
+        "internal/cli/aircraft_batch-lookup.go",
+        "internal/cli/domain-lookup_post.go",
+        "internal/cli/email-validation_email-validate-batch.go",
+        "internal/cli/email-validation_email-validate-single.go",
+        "internal/cli/exchange-rates-and-currency_exchange-rate-bulk.go",
+        "internal/cli/image-processing_image-metadata.go",
+        "internal/cli/ip-geolocation_batch.go",
+        "internal/cli/ip-geolocation_post.go",
+        "internal/cli/ip-intelligence_batch.go",
+        "internal/cli/sample-data_batch-post.go",
+        "internal/cli/secure-relay_custom.go",
+        "internal/cli/secure-relay_relay.go",
+        "internal/cli/spell-check_batch.go",
+        "internal/cli/spell-check_spell_check.go",
+        "internal/cli/text-language_detect-batch.go",
+        "internal/cli/text-language_detect.go",
+        "internal/cli/unit-conversion_unit-convert-post.go",
+        "internal/cli/user-avatar_upload-icon.go",
+        "internal/cli/validate-ip_post.go",
+        "internal/cli/vin-lookup_vin-decode.go",
+        "internal/cli/working-days_calculate-post.go",
+        "internal/cli/mx_lookup_helpers.go",
+        "internal/cli/active_api_support_test.go"
+      ],
+      "validated_outcome": "Focused generated-mutation test asserts --agent keeps stdout valid JSON and stderr warning-free while preserving structured partial_failure data."
+    },
+    {
+      "id": "which-separator-normalization",
+      "summary": "Normalize generated command separators when ranking datpaq which queries.",
+      "reason": "Natural queries like \"mx lookup\" should rank the hyphenated mx-lookup commands above unrelated commands that only share the generic word lookup.",
+      "files": [
+        "internal/cli/which.go",
+        "internal/cli/which_test.go"
+      ],
+      "validated_outcome": "which ranking test asserts \"mx lookup\" resolves to the mx-lookup group first."
+    },
+    {
+      "id": "sample-wire-parameter-names",
+      "summary": "Render REST samples with API wire parameter names instead of CLI flag names for commands whose names differ.",
+      "reason": "Convert Time samples used source-time/source-zone/target-zone in URLs even though the runtime request and API expect sourceTime/sourceZone/targetZone; touched APIs with known flag-to-wire differences get explicit mappings.",
+      "files": [
+        "internal/cli/sample.go",
+        "internal/cli/sample_test.go"
+      ],
+      "validated_outcome": "Sample tests assert Convert Time, Web Scraping, and MX Lookup snippets use API wire query/body names."
+    },
+    {
+      "id": "mx-lookup-domains-route",
+      "summary": "Route MX lookup commands and hosted MCP tools through /mx-lookup and send the plural domains parameter.",
+      "reason": "The live gateway exposes /api/v1/mx-lookup and expects domains; generated GET and batch code used stale domain and nested path shapes.",
+      "files": [
+        "internal/cli/mx-lookup_get.go",
+        "internal/cli/mx-lookup_batch.go",
+        "internal/cli/mx-lookup_post.go",
+        "internal/cli/mx_lookup_helpers.go",
+        "internal/mcp/tools.go"
+      ],
+      "validated_outcome": "Focused MX CLI tests assert GET query mapping, batch POST body/path, and clean agent output."
     }
   ]
 }

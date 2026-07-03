@@ -17,7 +17,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var version = "1.0.0"
+var version = "1.0.1"
 
 type rootFlags struct {
 	asJSON     bool
@@ -239,6 +239,7 @@ Run 'datpaq doctor' to verify auth and connectivity.`,
 	rootCmd.AddCommand(newIpGeolocationCmd(flags))
 	rootCmd.AddCommand(newIpIntelligenceCmd(flags))
 	rootCmd.AddCommand(newMxLookupCmd(flags))
+	rootCmd.AddCommand(newPhoneValidationCmd(flags))
 	rootCmd.AddCommand(newPreciousMetalsCmd(flags))
 	rootCmd.AddCommand(newProfanityCmd(flags))
 	rootCmd.AddCommand(newPublicHolidaysCmd(flags))
@@ -277,13 +278,14 @@ Run 'datpaq doctor' to verify auth and connectivity.`,
 	rootCmd.AddCommand(newSchemasPromotedCmd(flags))
 	rootCmd.AddCommand(newThesaurusPromotedCmd(flags))
 	rootCmd.AddCommand(newWebScreenshotPromotedCmd(flags))
+	rootCmd.AddCommand(newWebScrapingCmd(flags))
 	rootCmd.AddCommand(newWhoisPromotedCmd(flags))
 	rootCmd.AddCommand(newVersionCliCmd())
-	rootCmd.AddCommand(newSampleCmd(flags))    // hand-authored; see sample.go
-	rootCmd.AddCommand(newAPIExecCmd(flags))   // hand-authored; see api_exec.go
+	rootCmd.AddCommand(newSampleCmd(flags))  // hand-authored; see sample.go
+	rootCmd.AddCommand(newAPIExecCmd(flags)) // hand-authored; see api_exec.go
 
-	installBanner(rootCmd)                  // hand-authored; see banner.go
-	installTrailingNewline(rootCmd, flags)  // hand-authored; see banner.go
+	installBanner(rootCmd)                 // hand-authored; see banner.go
+	installTrailingNewline(rootCmd, flags) // hand-authored; see banner.go
 
 	return rootCmd
 }

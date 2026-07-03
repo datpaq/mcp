@@ -20,8 +20,8 @@ func newMxLookupBatchCmd(flags *rootFlags) *cobra.Command {
 		Use:         "batch",
 		Aliases:     []string{"create"},
 		Short:       "Batch MX record lookup for multiple domains",
-		Example:     "  datpaq mx-lookup batch",
-		Annotations: map[string]string{"pp:endpoint": "mx-lookup.batch", "pp:method": "POST", "pp:path": "/mx-lookup/batch"},
+		Example:     "  datpaq mx-lookup batch --domains example.com,gmail.com",
+		Annotations: map[string]string{"pp:endpoint": "mx-lookup.batch", "pp:method": "POST", "pp:path": "/mx-lookup"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if !stdinBody {
 				if !cmd.Flags().Changed("domains") && !flags.dryRun {
@@ -33,7 +33,7 @@ func newMxLookupBatchCmd(flags *rootFlags) *cobra.Command {
 				return err
 			}
 
-			path := "/mx-lookup/batch"
+			path := "/mx-lookup"
 			params := map[string]string{}
 			var body map[string]any
 			if stdinBody {
@@ -45,13 +45,13 @@ func newMxLookupBatchCmd(flags *rootFlags) *cobra.Command {
 				if err := json.Unmarshal(stdinData, &jsonBody); err != nil {
 					return fmt.Errorf("parsing stdin JSON: %w", err)
 				}
-				body = jsonBody
+				body = normalizeMXBody(jsonBody)
 			} else {
 				body = map[string]any{}
 				if bodyDomains != "" {
-					var parsedDomains any
-					if err := json.Unmarshal([]byte(bodyDomains), &parsedDomains); err != nil {
-						return fmt.Errorf("parsing --domains JSON: %w", err)
+					parsedDomains, err := mxDomainsBody(bodyDomains)
+					if err != nil {
+						return fmt.Errorf("parsing --domains: %w", err)
 					}
 					body["domains"] = parsedDomains
 				}
@@ -72,9 +72,11 @@ func newMxLookupBatchCmd(flags *rootFlags) *cobra.Command {
 			if !flags.dryRun && statusCode >= 200 && statusCode < 300 {
 				partialFailure = detectPartialFailure(data)
 				if partialFailure != nil {
-					fmt.Fprintf(os.Stderr, "warning: partial failure detected in %s response: %s\n", "mx-lookup", partialFailure.Message)
-					if len(partialFailure.ResourceNames) > 0 {
-						fmt.Fprintf(os.Stderr, "         succeeded: %d operation(s)\n", len(partialFailure.ResourceNames))
+					if shouldPrintResponseWarning(cmd.OutOrStdout(), flags) {
+						fmt.Fprintf(os.Stderr, "warning: partial failure detected in %s response: %s\n", "mx-lookup", partialFailure.Message)
+						if len(partialFailure.ResourceNames) > 0 {
+							fmt.Fprintf(os.Stderr, "         succeeded: %d operation(s)\n", len(partialFailure.ResourceNames))
+						}
 					}
 				}
 			}
@@ -189,7 +191,7 @@ func newMxLookupBatchCmd(flags *rootFlags) *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&bodyDomains, "domains", "", "Domains")
+	cmd.Flags().StringVar(&bodyDomains, "domains", "", "Comma-separated domains or JSON string array")
 	cmd.Flags().BoolVar(&stdinBody, "stdin", false, "Read request body as JSON from stdin")
 
 	return cmd

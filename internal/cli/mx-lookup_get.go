@@ -12,6 +12,7 @@ import (
 )
 
 func newMxLookupGetCmd(flags *rootFlags) *cobra.Command {
+	var flagDomains string
 	var flagDomain string
 	var flagResolveIps bool
 	var flagTestSmtp bool
@@ -21,11 +22,11 @@ func newMxLookupGetCmd(flags *rootFlags) *cobra.Command {
 		Use:         "get",
 		Aliases:     []string{"list"},
 		Short:       "Returns mail exchange records with optional IP resolution, SMTP testing, and SPF extraction.",
-		Example:     "  datpaq mx-lookup get --domain example-value",
+		Example:     "  datpaq mx-lookup get --domains example.com",
 		Annotations: map[string]string{"pp:endpoint": "mx-lookup.get", "pp:method": "GET", "pp:path": "/mx-lookup", "mcp:read-only": "true"},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if !cmd.Flags().Changed("domain") && !flags.dryRun {
-				return fmt.Errorf("required flag \"%s\" not set", "domain")
+			if !cmd.Flags().Changed("domains") && !cmd.Flags().Changed("domain") && !flags.dryRun {
+				return fmt.Errorf("required flag \"%s\" not set", "domains")
 			}
 			c, err := flags.newClient()
 			if err != nil {
@@ -34,8 +35,8 @@ func newMxLookupGetCmd(flags *rootFlags) *cobra.Command {
 
 			path := "/mx-lookup"
 			params := map[string]string{}
-			if flagDomain != "" {
-				params["domain"] = fmt.Sprintf("%v", flagDomain)
+			if value := mxDomainsQueryValue(flagDomains, flagDomain); value != "" {
+				params["domains"] = value
 			}
 			if flagResolveIps != false {
 				params["resolve_ips"] = fmt.Sprintf("%v", flagResolveIps)
@@ -94,10 +95,12 @@ func newMxLookupGetCmd(flags *rootFlags) *cobra.Command {
 			return printOutputWithFlags(cmd.OutOrStdout(), data, flags)
 		},
 	}
-	cmd.Flags().StringVar(&flagDomain, "domain", "", "Domain")
+	cmd.Flags().StringVar(&flagDomains, "domains", "", "Domain or comma-separated domains")
+	cmd.Flags().StringVar(&flagDomain, "domain", "", "Legacy alias for --domains")
 	cmd.Flags().BoolVar(&flagResolveIps, "resolve-ips", false, "Resolve ips")
 	cmd.Flags().BoolVar(&flagTestSmtp, "test-smtp", false, "Test smtp")
 	cmd.Flags().BoolVar(&flagIncludeSpf, "include-spf", false, "Include spf")
+	_ = cmd.Flags().MarkHidden("domain")
 
 	return cmd
 }

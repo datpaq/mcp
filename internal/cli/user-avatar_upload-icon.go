@@ -53,9 +53,11 @@ func newUserAvatarUploadIconCmd(flags *rootFlags) *cobra.Command {
 			if !flags.dryRun && statusCode >= 200 && statusCode < 300 {
 				partialFailure = detectPartialFailure(data)
 				if partialFailure != nil {
-					fmt.Fprintf(os.Stderr, "warning: partial failure detected in %s response: %s\n", "user-avatar", partialFailure.Message)
-					if len(partialFailure.ResourceNames) > 0 {
-						fmt.Fprintf(os.Stderr, "         succeeded: %d operation(s)\n", len(partialFailure.ResourceNames))
+					if shouldPrintResponseWarning(cmd.OutOrStdout(), flags) {
+						fmt.Fprintf(os.Stderr, "warning: partial failure detected in %s response: %s\n", "user-avatar", partialFailure.Message)
+						if len(partialFailure.ResourceNames) > 0 {
+							fmt.Fprintf(os.Stderr, "         succeeded: %d operation(s)\n", len(partialFailure.ResourceNames))
+						}
 					}
 				}
 			}

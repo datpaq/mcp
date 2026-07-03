@@ -74,6 +74,9 @@ var whichIndex = []whichEntry{
 	{Command: "mx-lookup batch", Description: "Batch MX record lookup for multiple domains", Group: "mx-lookup"},
 	{Command: "mx-lookup get", Description: "Returns mail exchange records with optional IP resolution, SMTP testing, and SPF extraction.", Group: "mx-lookup"},
 	{Command: "mx-lookup post", Description: "Look up MX records for a domain (POST)", Group: "mx-lookup"},
+	{Command: "phone-validation validate", Description: "Validate and format a phone number", Group: "phone-validation"},
+	{Command: "phone-validation validate-batch", Description: "Validate multiple phone numbers", Group: "phone-validation"},
+	{Command: "phone-validation format", Description: "Format a phone number as you type", Group: "phone-validation"},
 	{Command: "precious-metals assets", Description: "Returns metadata for all supported assets — gold (XAU), silver (XAG), palladium (XPD), copper, BTC, ETH, etc.", Group: "precious-metals"},
 	{Command: "precious-metals history", Description: "Get historical price data for an asset", Group: "precious-metals"},
 	{Command: "precious-metals prices", Description: "Get current prices for precious metals and crypto", Group: "precious-metals"},
@@ -110,6 +113,7 @@ var whichIndex = []whichEntry{
 	{Command: "vin-lookup vin-makes", Description: "List all vehicle makes in the NHTSA database", Group: "vin-lookup"},
 	{Command: "vin-lookup vin-sample-get", Description: "Decode a single VIN via GET", Group: "vin-lookup"},
 	{Command: "vin-lookup vin-suggest", Description: "Get VIN prefix suggestions for autocomplete", Group: "vin-lookup"},
+	{Command: "web-scraping scrape", Description: "Extract public web page content as JSON, Markdown, or HTML", Group: "web-scraping"},
 	{Command: "web-screenshot web_screenshot", Description: "Renders a web page via Puppeteer headless browser and returns a screenshot. Supports viewport simulation, format selection, quality control, and crop.", Group: "web-screenshot"},
 	{Command: "whois lookup", Description: "Returns registrar, registration date, expiration date, name servers, and raw WHOIS data. Supports single domain or batch array (max 50).", Group: "whois"},
 	{Command: "working-days batch", Description: "Batch working day calculations", Group: "working-days"},
@@ -142,7 +146,7 @@ func rankWhich(index []whichEntry, query string, limit int) []whichMatch {
 	if limit <= 0 {
 		limit = 3
 	}
-	q := strings.ToLower(strings.TrimSpace(query))
+	q := whichNormalizeText(query)
 	if q == "" {
 		out := make([]whichMatch, 0, len(index))
 		for _, e := range index {
@@ -178,10 +182,10 @@ func rankWhich(index []whichEntry, query string, limit int) []whichMatch {
 
 func whichScoreEntry(e whichEntry, query string, qTokens []string) int {
 	score := 0
-	cmd := strings.ToLower(e.Command)
+	cmd := whichNormalizeText(e.Command)
 	cmdTokens := strings.Fields(cmd)
-	desc := strings.ToLower(e.Description)
-	group := strings.ToLower(e.Group)
+	desc := whichNormalizeText(e.Description)
+	group := whichNormalizeText(e.Group)
 
 	// Exact token match on the command path (any token).
 	for _, qt := range qTokens {
@@ -210,6 +214,12 @@ func whichScoreEntry(e whichEntry, query string, qTokens []string) int {
 		}
 	}
 	return score
+}
+
+func whichNormalizeText(s string) string {
+	s = strings.ToLower(strings.TrimSpace(s))
+	replacer := strings.NewReplacer("-", " ", "_", " ", "/", " ")
+	return strings.Join(strings.Fields(replacer.Replace(s)), " ")
 }
 
 func newWhichCmd(flags *rootFlags) *cobra.Command {

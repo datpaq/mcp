@@ -113,6 +113,7 @@ type endpointInfo struct {
 
 type paramSpec struct {
 	name        string // flag name as users type it: --tail
+	wireName    string // REST query/body key used by generated command code
 	typeName    string // "string", "int", "bool", "duration", ...
 	description string
 	required    bool
@@ -136,7 +137,7 @@ func collectEndpoints(root *cobra.Command) []endpointInfo {
 						httpMethod:  child.Annotations[annMethod],
 						path:        child.Annotations[annPath],
 						short:       child.Short,
-						queryParams: extractParams(child),
+						queryParams: extractParams(child, ep),
 						cmd:         child,
 					})
 				}
@@ -151,12 +152,12 @@ func collectEndpoints(root *cobra.Command) []endpointInfo {
 // extractParams pulls user-facing flags off a generated endpoint command and
 // classifies them as required vs optional. Skips persistent flags (those are
 // global config like --json) and the canonical -h/--help.
-func extractParams(c *cobra.Command) []paramSpec {
+func extractParams(c *cobra.Command, endpoint string) []paramSpec {
 	var out []paramSpec
 	// Cobra stores required flag names in an annotation on each flag itself,
 	// so we walk the local flag set and read that annotation when present.
 	c.LocalFlags().VisitAll(func(f *pflag.Flag) {
-		if f.Name == "help" {
+		if f.Name == "help" || f.Hidden {
 			return
 		}
 		required := false
@@ -165,6 +166,7 @@ func extractParams(c *cobra.Command) []paramSpec {
 		}
 		out = append(out, paramSpec{
 			name:        f.Name,
+			wireName:    sampleWireParamName(endpoint, f.Name),
 			typeName:    f.Value.Type(),
 			description: f.Usage,
 			required:    required,
@@ -287,7 +289,7 @@ func renderJS(w io.Writer, ep endpointInfo, url string) {
 		fmt.Fprintln(w, "  },")
 		fmt.Fprintln(w, "  body: JSON.stringify({")
 		for _, p := range ep.queryParams {
-			fmt.Fprintf(w, "    %s: %s,\n", p.name, jsLiteral(p))
+			fmt.Fprintf(w, "    %s: %s,\n", p.wireName, jsLiteral(p))
 		}
 		fmt.Fprintln(w, "  }),")
 		fmt.Fprintln(w, "});")
@@ -299,7 +301,7 @@ func renderJS(w io.Writer, ep endpointInfo, url string) {
 	} else {
 		fmt.Fprintf(w, "const response = await fetch(%q + \"?\" + new URLSearchParams({\n", url)
 		for _, p := range ep.queryParams {
-			fmt.Fprintf(w, "  %s: %s,\n", p.name, jsLiteral(p))
+			fmt.Fprintf(w, "  %s: %s,\n", p.wireName, jsLiteral(p))
 		}
 		fmt.Fprintln(w, "}), {")
 	}
@@ -321,7 +323,7 @@ func renderPython(w io.Writer, ep endpointInfo, url string) {
 		fmt.Fprintln(w, `    headers={"x-api-key": os.environ["DATPAQ_API_KEY"]},`)
 		fmt.Fprintln(w, "    json={")
 		for _, p := range ep.queryParams {
-			fmt.Fprintf(w, "        %q: %s,\n", p.name, pyLiteral(p))
+			fmt.Fprintf(w, "        %q: %s,\n", p.wireName, pyLiteral(p))
 		}
 		fmt.Fprintln(w, "    },")
 		fmt.Fprintln(w, ")")
@@ -334,7 +336,7 @@ func renderPython(w io.Writer, ep endpointInfo, url string) {
 	if len(ep.queryParams) > 0 {
 		fmt.Fprintln(w, "    params={")
 		for _, p := range ep.queryParams {
-			fmt.Fprintf(w, "        %q: %s,\n", p.name, pyLiteral(p))
+			fmt.Fprintf(w, "        %q: %s,\n", p.wireName, pyLiteral(p))
 		}
 		fmt.Fprintln(w, "    },")
 	}
@@ -347,7 +349,7 @@ func renderGo(w io.Writer, ep endpointInfo, url string) {
 	if hasBody(ep.httpMethod) {
 		fmt.Fprintln(w, "body := map[string]any{")
 		for _, p := range ep.queryParams {
-			fmt.Fprintf(w, "    %q: %s,\n", p.name, goLiteral(p))
+			fmt.Fprintf(w, "    %q: %s,\n", p.wireName, goLiteral(p))
 		}
 		fmt.Fprintln(w, "}")
 		fmt.Fprintln(w, "raw, _ := json.Marshal(body)")
@@ -363,7 +365,7 @@ func renderGo(w io.Writer, ep endpointInfo, url string) {
 	if len(ep.queryParams) > 0 {
 		fmt.Fprintln(w, "q := req.URL.Query()")
 		for _, p := range ep.queryParams {
-			fmt.Fprintf(w, "q.Set(%q, %s)\n", p.name, goLiteral(p))
+			fmt.Fprintf(w, "q.Set(%q, %s)\n", p.wireName, goLiteral(p))
 		}
 		fmt.Fprintln(w, "req.URL.RawQuery = q.Encode()")
 	}
@@ -385,7 +387,7 @@ func hasBody(httpMethod string) bool {
 func sampleQueryString(ep endpointInfo) string {
 	var parts []string
 	for _, p := range ep.queryParams {
-		parts = append(parts, p.name+"=<"+p.typeName+">")
+		parts = append(parts, p.wireName+"=<"+p.typeName+">")
 	}
 	return strings.Join(parts, "&")
 }
@@ -393,9 +395,44 @@ func sampleQueryString(ep endpointInfo) string {
 func sampleJSONBody(ep endpointInfo) string {
 	var parts []string
 	for _, p := range ep.queryParams {
-		parts = append(parts, fmt.Sprintf("%q:%s", p.name, jsonLiteral(p)))
+		parts = append(parts, fmt.Sprintf("%q:%s", p.wireName, jsonLiteral(p)))
 	}
 	return "{" + strings.Join(parts, ",") + "}"
+}
+
+func sampleWireParamName(endpoint, flagName string) string {
+	key := endpoint + "." + flagName
+	switch key {
+	case "convert-time.convert_time.source-time":
+		return "sourceTime"
+	case "convert-time.convert_time.source-zone":
+		return "sourceZone"
+	case "convert-time.convert_time.target-zone":
+		return "targetZone"
+	case "mx-lookup.get.resolve-ips",
+		"mx-lookup.post.resolve-ips":
+		return "resolve_ips"
+	case "mx-lookup.get.test-smtp",
+		"mx-lookup.post.test-smtp":
+		return "test_smtp"
+	case "mx-lookup.get.include-spf",
+		"mx-lookup.post.include-spf":
+		return "include_spf"
+	case "phone-validation.validate.phone-number",
+		"phone-validation.format.phone-number":
+		return "phoneNumber"
+	case "phone-validation.validate.country-code",
+		"phone-validation.format.country-code":
+		return "countryCode"
+	case "phone-validation.validate-batch.phone-numbers":
+		return "phoneNumbers"
+	case "phone-validation.validate-batch.default-country-code":
+		return "defaultCountryCode"
+	case "web-scraping.scrape.wait-until":
+		return "waitUntil"
+	default:
+		return flagName
+	}
 }
 
 // Per-language literal helpers. They all answer the same question — "what

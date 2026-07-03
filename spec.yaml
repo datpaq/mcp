@@ -5,7 +5,7 @@ info:
     Comprehensive multi-service API platform providing aviation, geolocation, financial, utilities, image processing,
     and data enrichment capabilities. All endpoints require authentication via API key passed as an x-api-key header or
     api_key query parameter.
-  version: 1.0.0
+  version: 1.0.1
   contact:
     name: Datpaq Support
     url: https://datpaq.com
@@ -481,7 +481,7 @@ paths:
           $ref: "#/components/responses/RateLimited"
         default:
           $ref: "#/components/responses/ServiceUnavailable"
-  /dns:
+  /dns-lookup:
     get:
       tags:
         - DNS Lookup
@@ -1585,10 +1585,10 @@ paths:
       tags:
         - MX Lookup
       operationId: mxLookupGet
-      summary: Look up MX records for a domain
+      summary: Look up MX records for one or more domains
       description: Returns mail exchange records with optional IP resolution, SMTP testing, and SPF extraction.
       parameters:
-        - name: domain
+        - name: domains
           in: query
           required: true
           schema:
@@ -1627,54 +1627,11 @@ paths:
           $ref: "#/components/responses/RateLimited"
         default:
           $ref: "#/components/responses/ServiceUnavailable"
-  /mx-lookup/lookup:
     post:
       tags:
         - MX Lookup
       operationId: mxLookupPost
-      summary: Look up MX records for a domain (POST)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - domain
-              properties:
-                domain:
-                  type: string
-                  example: gmail.com
-                resolve_ips:
-                  type: boolean
-                  default: false
-                test_smtp:
-                  type: boolean
-                  default: false
-                include_spf:
-                  type: boolean
-                  default: false
-      responses:
-        "200":
-          description: MX records and optional metadata
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GenericSuccess"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "429":
-          $ref: "#/components/responses/RateLimited"
-        default:
-          $ref: "#/components/responses/ServiceUnavailable"
-  /mx-lookup/batch:
-    post:
-      tags:
-        - MX Lookup
-      operationId: mxLookupBatch
-      summary: Batch MX record lookup for multiple domains
+      summary: Look up MX records for one or more domains (POST)
       requestBody:
         required: true
         content:
@@ -1692,9 +1649,18 @@ paths:
                   example:
                     - gmail.com
                     - yahoo.com
+                resolve_ips:
+                  type: boolean
+                  default: false
+                test_smtp:
+                  type: boolean
+                  default: false
+                include_spf:
+                  type: boolean
+                  default: false
       responses:
         "200":
-          description: MX records for each domain
+          description: MX records and optional metadata
           content:
             application/json:
               schema:

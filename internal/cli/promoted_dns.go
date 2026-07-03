@@ -20,7 +20,7 @@ func newDnsPromotedCmd(flags *rootFlags) *cobra.Command {
 		Short:       "Supports record types A, AAAA, MX, CNAME, TXT, NS, SOA, and ALL.",
 		Long:        "Shortcut for 'dns lookup'. Supports record types A, AAAA, MX, CNAME, TXT, NS, SOA, and ALL.",
 		Example:     "  datpaq dns --domain example-value",
-		Annotations: map[string]string{"pp:endpoint": "dns.lookup", "pp:method": "GET", "pp:path": "/dns", "mcp:read-only": "true"},
+		Annotations: map[string]string{"pp:endpoint": "dns.lookup", "pp:method": "GET", "pp:path": "/dns-lookup", "mcp:read-only": "true"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if !cmd.Flags().Changed("domain") && !flags.dryRun {
 				return fmt.Errorf("required flag \"%s\" not set", "domain")
@@ -43,7 +43,7 @@ func newDnsPromotedCmd(flags *rootFlags) *cobra.Command {
 				return err
 			}
 
-			path := "/dns"
+			path := "/dns-lookup"
 			params := map[string]string{}
 			if flagDomain != "" {
 				params["domain"] = fmt.Sprintf("%v", flagDomain)

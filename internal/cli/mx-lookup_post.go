@@ -13,6 +13,7 @@ import (
 )
 
 func newMxLookupPostCmd(flags *rootFlags) *cobra.Command {
+	var bodyDomains string
 	var bodyDomain string
 	var bodyIncludeSpf bool
 	var bodyResolveIps bool
@@ -22,12 +23,12 @@ func newMxLookupPostCmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:         "post",
 		Short:       "Look up MX records for a domain (POST)",
-		Example:     "  datpaq mx-lookup post --domain example-value",
-		Annotations: map[string]string{"pp:endpoint": "mx-lookup.post", "pp:method": "POST", "pp:path": "/mx-lookup/lookup"},
+		Example:     "  datpaq mx-lookup post --domains example.com",
+		Annotations: map[string]string{"pp:endpoint": "mx-lookup.post", "pp:method": "POST", "pp:path": "/mx-lookup"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if !stdinBody {
-				if !cmd.Flags().Changed("domain") && !flags.dryRun {
-					return fmt.Errorf("required flag \"%s\" not set", "domain")
+				if !cmd.Flags().Changed("domains") && !cmd.Flags().Changed("domain") && !flags.dryRun {
+					return fmt.Errorf("required flag \"%s\" not set", "domains")
 				}
 			}
 			c, err := flags.newClient()
@@ -35,7 +36,7 @@ func newMxLookupPostCmd(flags *rootFlags) *cobra.Command {
 				return err
 			}
 
-			path := "/mx-lookup/lookup"
+			path := "/mx-lookup"
 			params := map[string]string{}
 			var body map[string]any
 			if stdinBody {
@@ -47,11 +48,15 @@ func newMxLookupPostCmd(flags *rootFlags) *cobra.Command {
 				if err := json.Unmarshal(stdinData, &jsonBody); err != nil {
 					return fmt.Errorf("parsing stdin JSON: %w", err)
 				}
-				body = jsonBody
+				body = normalizeMXBody(jsonBody)
 			} else {
 				body = map[string]any{}
-				if bodyDomain != "" {
-					body["domain"] = bodyDomain
+				if rawDomains := mxDomainsValue(bodyDomains, bodyDomain); rawDomains != "" {
+					parsedDomains, err := mxDomainsBody(rawDomains)
+					if err != nil {
+						return fmt.Errorf("parsing --domains: %w", err)
+					}
+					body["domains"] = parsedDomains
 				}
 				if cmd.Flags().Changed("include-spf") {
 					body["include_spf"] = bodyIncludeSpf
@@ -79,9 +84,11 @@ func newMxLookupPostCmd(flags *rootFlags) *cobra.Command {
 			if !flags.dryRun && statusCode >= 200 && statusCode < 300 {
 				partialFailure = detectPartialFailure(data)
 				if partialFailure != nil {
-					fmt.Fprintf(os.Stderr, "warning: partial failure detected in %s response: %s\n", "mx-lookup", partialFailure.Message)
-					if len(partialFailure.ResourceNames) > 0 {
-						fmt.Fprintf(os.Stderr, "         succeeded: %d operation(s)\n", len(partialFailure.ResourceNames))
+					if shouldPrintResponseWarning(cmd.OutOrStdout(), flags) {
+						fmt.Fprintf(os.Stderr, "warning: partial failure detected in %s response: %s\n", "mx-lookup", partialFailure.Message)
+						if len(partialFailure.ResourceNames) > 0 {
+							fmt.Fprintf(os.Stderr, "         succeeded: %d operation(s)\n", len(partialFailure.ResourceNames))
+						}
 					}
 				}
 			}
@@ -196,11 +203,13 @@ func newMxLookupPostCmd(flags *rootFlags) *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&bodyDomain, "domain", "", "Domain")
+	cmd.Flags().StringVar(&bodyDomains, "domains", "", "Domain or comma-separated domains")
+	cmd.Flags().StringVar(&bodyDomain, "domain", "", "Legacy alias for --domains")
 	cmd.Flags().BoolVar(&bodyIncludeSpf, "include-spf", false, "Include spf")
 	cmd.Flags().BoolVar(&bodyResolveIps, "resolve-ips", false, "Resolve ips")
 	cmd.Flags().BoolVar(&bodyTestSmtp, "test-smtp", false, "Test smtp")
 	cmd.Flags().BoolVar(&stdinBody, "stdin", false, "Read request body as JSON from stdin")
+	_ = cmd.Flags().MarkHidden("domain")
 
 	return cmd
 }
