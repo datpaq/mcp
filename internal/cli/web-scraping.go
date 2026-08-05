@@ -64,6 +64,6 @@ func newWebScrapingCmd(flags *rootFlags) *cobra.Command {
 	cmd.Flags().StringVar(&bodyURL, "url", "", "Public HTTP(S) URL to scrape")
 	cmd.Flags().StringVar(&bodyFormat, "format", "json", "Output format requested from the API (json, markdown, html)")
 	cmd.Flags().StringVar(&bodyWaitUntil, "wait-until", "networkidle2", "Browser wait condition (load, domcontentloaded, networkidle0, networkidle2)")
-	cmd.Flags().BoolVar(&stdinBody, "stdin", false, "Read request body as JSON from stdin")
+	addHiddenStdinFlag(cmd, &stdinBody)
 	return cmd
 }

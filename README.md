@@ -27,7 +27,7 @@ For the **local CLI** (and the stdio MCP that ships with it for Claude Desktop),
 | **URL** | `https://mcp.datpaq.com/` |
 | **Transport** | streamable HTTP |
 | **Auth** | `Authorization: Bearer YOUR_DATPAQ_API_KEY` (per request) |
-| **Tools** | 34 hosted tools across 13 active APIs |
+| **Tools** | Hosted tools across 41 active APIs |
 
 Verify with `curl`:
 

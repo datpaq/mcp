@@ -63,6 +63,6 @@ func newPhoneValidationValidateBatchCmd(flags *rootFlags) *cobra.Command {
 	}
 	cmd.Flags().StringVar(&bodyPhoneNumbers, "phone-numbers", "", "Comma-separated phone numbers or JSON array")
 	cmd.Flags().StringVar(&bodyDefaultCountryCode, "default-country-code", "", "Default 2-letter ISO country code for national numbers")
-	cmd.Flags().BoolVar(&stdinBody, "stdin", false, "Read request body as JSON from stdin")
+	addHiddenStdinFlag(cmd, &stdinBody)
 	return cmd
 }

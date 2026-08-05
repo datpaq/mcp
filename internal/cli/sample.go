@@ -428,8 +428,63 @@ func sampleWireParamName(endpoint, flagName string) string {
 		return "phoneNumbers"
 	case "phone-validation.validate-batch.default-country-code":
 		return "defaultCountryCode"
-	case "web-scraping.scrape.wait-until":
+	case "web-scraping.scrape.wait-until",
+		"pdf-generation.from-url.wait-until":
 		return "waitUntil"
+	case "weather.forecast.forecast-days":
+		return "forecastDays"
+	case "calendar.month.week-start",
+		"calendar.day.week-start",
+		"calendar.range.week-start":
+		return "week_start"
+	case "calendar.month.country-code",
+		"calendar.day.country-code",
+		"calendar.range.country-code",
+		"calendar.holidays.country-code":
+		return "country_code"
+	case "calendar.month.include-holidays",
+		"calendar.day.include-holidays",
+		"calendar.range.include-holidays":
+		return "include_holidays"
+	case "calendar.month.holiday-sources",
+		"calendar.day.holiday-sources",
+		"calendar.range.holiday-sources",
+		"calendar.holidays.holiday-sources":
+		return "holiday_sources"
+	case "calendar.month.custom-holidays",
+		"calendar.day.custom-holidays",
+		"calendar.range.custom-holidays",
+		"calendar.holidays.custom-holidays":
+		return "custom_holidays"
+	case "calendar.month.fiscal-year-start-month",
+		"calendar.day.fiscal-year-start-month",
+		"calendar.range.fiscal-year-start-month":
+		return "fiscal_year_start_month"
+	case "calendar.month.output-format",
+		"calendar.range.output-format":
+		return "output_format"
+	case "calendar.range.start-date":
+		return "start_date"
+	case "calendar.range.end-date":
+		return "end_date"
+	case "calendar.range.include-weekends":
+		return "include_weekends"
+	case "geocoding.forward.country-codes":
+		return "countryCodes"
+	case "qr-code.generate.error-correction-level":
+		return "errorCorrectionLevel"
+	case "qr-code.generate.dark-color":
+		return "darkColor"
+	case "qr-code.generate.light-color":
+		return "lightColor"
+	case "qr-code.generate.response-type",
+		"pdf-generation.from-url.response-type",
+		"pdf-generation.from-html.response-type":
+		return "responseType"
+	case "qr-code.decode.image-base64":
+		return "imageBase64"
+	case "qr-code.decode.max-codes":
+		return "maxCodes"
 	default:
 		return flagName
 	}

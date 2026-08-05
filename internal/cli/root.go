@@ -17,7 +17,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var version = "1.0.1"
+var version = "1.0.2"
 
 type rootFlags struct {
 	asJSON     bool
@@ -229,20 +229,24 @@ Run 'datpaq doctor' to verify auth and connectivity.`,
 		return nil
 	}
 	rootCmd.AddCommand(newAircraftCmd(flags))
+	rootCmd.AddCommand(newCalendarCmd(flags))
 	rootCmd.AddCommand(newCountryCodesCmd(flags))
 	rootCmd.AddCommand(newDomainLookupCmd(flags))
 	rootCmd.AddCommand(newEmailValidationCmd(flags))
 	rootCmd.AddCommand(newEvChargerCmd(flags))
 	rootCmd.AddCommand(newExchangeRatesAndCurrencyCmd(flags))
+	rootCmd.AddCommand(newGeocodingCmd(flags))
 	rootCmd.AddCommand(newHelicopterCmd(flags))
 	rootCmd.AddCommand(newImageProcessingCmd(flags))
 	rootCmd.AddCommand(newIpGeolocationCmd(flags))
 	rootCmd.AddCommand(newIpIntelligenceCmd(flags))
 	rootCmd.AddCommand(newMxLookupCmd(flags))
+	rootCmd.AddCommand(newPDFGenerationCmd(flags))
 	rootCmd.AddCommand(newPhoneValidationCmd(flags))
 	rootCmd.AddCommand(newPreciousMetalsCmd(flags))
 	rootCmd.AddCommand(newProfanityCmd(flags))
 	rootCmd.AddCommand(newPublicHolidaysCmd(flags))
+	rootCmd.AddCommand(newQRCodeCmd(flags))
 	rootCmd.AddCommand(newSampleDataCmd(flags))
 	rootCmd.AddCommand(newSecureRelayCmd(flags))
 	rootCmd.AddCommand(newSpellCheckCmd(flags))
@@ -252,6 +256,8 @@ Run 'datpaq doctor' to verify auth and connectivity.`,
 	rootCmd.AddCommand(newUserAvatarCmd(flags))
 	rootCmd.AddCommand(newValidateIpCmd(flags))
 	rootCmd.AddCommand(newVinLookupCmd(flags))
+	rootCmd.AddCommand(newWeatherCmd(flags))
+	rootCmd.AddCommand(newWebSearchCmd(flags))
 	rootCmd.AddCommand(newWorkingDaysCmd(flags))
 	rootCmd.AddCommand(newDoctorCmd(flags))
 	rootCmd.AddCommand(newAuthCmd(flags))

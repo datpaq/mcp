@@ -5,7 +5,7 @@ info:
     Comprehensive multi-service API platform providing aviation, geolocation, financial, utilities, image processing,
     and data enrichment capabilities. All endpoints require authentication via API key passed as an x-api-key header or
     api_key query parameter.
-  version: 1.0.1
+  version: 1.0.2
   contact:
     name: Datpaq Support
     url: https://datpaq.com

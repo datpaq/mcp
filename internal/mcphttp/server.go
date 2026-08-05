@@ -45,7 +45,7 @@ import (
 func NewHandler(baseURL string) http.Handler {
 	mcpServer := server.NewMCPServer(
 		"Datpaq Proapi",
-		"1.0.1",
+		"1.0.2",
 		server.WithToolCapabilities(false),
 	)
 	// RegisterPublicTools (not RegisterTools): the hosted surface

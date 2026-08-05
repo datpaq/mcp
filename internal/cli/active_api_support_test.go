@@ -33,9 +33,13 @@ func runAPICommand(t *testing.T, responseBody string, args ...string) (string, s
 			t.Errorf("read request body: %v", err)
 		}
 		mu.Lock()
+		path := r.URL.Path
+		if r.URL.RawQuery != "" {
+			path = path + "?" + r.URL.RawQuery
+		}
 		requests = append(requests, capturedAPIRequest{
 			Method: r.Method,
-			Path:   r.URL.Path,
+			Path:   path,
 			Body:   string(body),
 		})
 		mu.Unlock()
@@ -166,6 +170,186 @@ func TestWebScrapingPostsScrapeBody(t *testing.T) {
 		t.Fatalf("unexpected request body: %s", req.Body)
 	}
 	assertJSONOnly(t, stdout)
+	assertNoWarning(t, stderr)
+}
+
+func TestWeatherCurrentGetsQueryParams(t *testing.T) {
+	stdout, stderr, requests, err := runAPICommand(t,
+		`{"success":true,"temperature":72}`,
+		"weather", "current", "--lat", "40.71", "--lon", "-74.01", "--units", "fahrenheit", "--agent", "--data-source", "live", "--no-cache",
+	)
+	if err != nil {
+		t.Fatalf("Execute: %v\nstdout=%s\nstderr=%s", err, stdout, stderr)
+	}
+	if len(requests) != 1 {
+		t.Fatalf("requests = %d, want 1", len(requests))
+	}
+	if requests[0].Method != http.MethodGet {
+		t.Fatalf("method = %s, want GET", requests[0].Method)
+	}
+	if !strings.HasPrefix(requests[0].Path, "/weather/current?") && requests[0].Path != "/weather/current" {
+		t.Fatalf("path = %s, want /weather/current?...", requests[0].Path)
+	}
+	if !strings.Contains(requests[0].Path, "lat=40.71") || !strings.Contains(requests[0].Path, "lon=-74.01") {
+		t.Fatalf("missing lat/lon query in %s", requests[0].Path)
+	}
+	assertJSONOnly(t, stdout)
+	assertNoWarning(t, stderr)
+}
+
+func TestGeocodingForwardGetsQuery(t *testing.T) {
+	stdout, stderr, requests, err := runAPICommand(t,
+		`{"success":true,"results":[{"lat":40.75,"lon":-73.99}]}`,
+		"geocoding", "forward", "--q", "Empire State Building", "--limit", "3", "--agent", "--data-source", "live", "--no-cache",
+	)
+	if err != nil {
+		t.Fatalf("Execute: %v\nstdout=%s\nstderr=%s", err, stdout, stderr)
+	}
+	if len(requests) != 1 || requests[0].Method != http.MethodGet {
+		t.Fatalf("unexpected requests: %+v", requests)
+	}
+	if !strings.HasPrefix(requests[0].Path, "/geocoding/forward") {
+		t.Fatalf("path = %s, want /geocoding/forward...", requests[0].Path)
+	}
+	if !strings.Contains(requests[0].Path, "q=Empire+State+Building") && !strings.Contains(requests[0].Path, "q=Empire%20State%20Building") {
+		t.Fatalf("missing q query in %s", requests[0].Path)
+	}
+	assertJSONOnly(t, stdout)
+	assertNoWarning(t, stderr)
+}
+
+func TestQRCodeGeneratePostsBody(t *testing.T) {
+	stdout, stderr, requests, err := runAPICommand(t,
+		`{"success":true,"format":"png"}`,
+		"qr-code", "generate", "--text", "https://datpaq.com", "--format", "png", "--size", "128", "--agent", "--no-cache",
+	)
+	if err != nil {
+		t.Fatalf("Execute: %v\nstdout=%s\nstderr=%s", err, stdout, stderr)
+	}
+	if len(requests) != 1 || requests[0].Method != http.MethodPost || requests[0].Path != "/qr-code/generate" {
+		t.Fatalf("unexpected requests: %+v", requests)
+	}
+	var body map[string]any
+	if err := json.Unmarshal([]byte(requests[0].Body), &body); err != nil {
+		t.Fatalf("body: %v", err)
+	}
+	if body["text"] != "https://datpaq.com" || body["format"] != "png" {
+		t.Fatalf("unexpected body: %s", requests[0].Body)
+	}
+	assertJSONOnly(t, stdout)
+	assertNoWarning(t, stderr)
+}
+
+func TestWebSearchSearchGetsQuery(t *testing.T) {
+	stdout, stderr, requests, err := runAPICommand(t,
+		`{"success":true,"results":[]}`,
+		"web-search", "search", "--q", "datpaq api", "--limit", "5", "--agent", "--data-source", "live", "--no-cache",
+	)
+	if err != nil {
+		t.Fatalf("Execute: %v\nstdout=%s\nstderr=%s", err, stdout, stderr)
+	}
+	if len(requests) != 1 || requests[0].Method != http.MethodGet || !strings.HasPrefix(requests[0].Path, "/web-search/search") {
+		t.Fatalf("unexpected requests: %+v", requests)
+	}
+	assertJSONOnly(t, stdout)
+	assertNoWarning(t, stderr)
+}
+
+func TestCalendarMonthGetsQuery(t *testing.T) {
+	stdout, stderr, requests, err := runAPICommand(t,
+		`{"success":true,"days":[]}`,
+		"calendar", "month", "--year", "2026", "--month", "8", "--country-code", "US", "--include-holidays", "--agent", "--data-source", "live", "--no-cache",
+	)
+	if err != nil {
+		t.Fatalf("Execute: %v\nstdout=%s\nstderr=%s", err, stdout, stderr)
+	}
+	if len(requests) != 1 || requests[0].Method != http.MethodGet || !strings.HasPrefix(requests[0].Path, "/calendar/month") {
+		t.Fatalf("unexpected requests: %+v", requests)
+	}
+	for _, want := range []string{"year=2026", "month=8", "country_code=US", "include_holidays=true"} {
+		if !strings.Contains(requests[0].Path, want) {
+			t.Fatalf("missing %s in %s", want, requests[0].Path)
+		}
+	}
+	assertJSONOnly(t, stdout)
+	assertNoWarning(t, stderr)
+}
+
+func TestPDFGenerationFromURLPostsBody(t *testing.T) {
+	stdout, stderr, requests, err := runAPICommand(t,
+		`{"success":true,"responseType":"base64"}`,
+		"pdf-generation", "from-url", "--url", "https://example.com", "--response-type", "base64", "--agent", "--no-cache",
+	)
+	if err != nil {
+		t.Fatalf("Execute: %v\nstdout=%s\nstderr=%s", err, stdout, stderr)
+	}
+	if len(requests) != 1 || requests[0].Method != http.MethodPost || requests[0].Path != "/pdf-generation/from-url" {
+		t.Fatalf("unexpected requests: %+v", requests)
+	}
+	var body map[string]any
+	if err := json.Unmarshal([]byte(requests[0].Body), &body); err != nil {
+		t.Fatalf("body: %v", err)
+	}
+	if body["url"] != "https://example.com" || body["responseType"] != "base64" {
+		t.Fatalf("unexpected body: %s", requests[0].Body)
+	}
+	assertJSONOnly(t, stdout)
+	assertNoWarning(t, stderr)
+}
+
+
+func TestGeocodingBatchDryRunSucceedsWithoutQueries(t *testing.T) {
+	stdout, stderr, requests, err := runAPICommand(t,
+		`{"ignored":true}`,
+		"geocoding", "batch", "--dry-run", "--agent",
+	)
+	if err != nil {
+		t.Fatalf("Execute: %v\nstdout=%s\nstderr=%s", err, stdout, stderr)
+	}
+	if len(requests) != 0 {
+		t.Fatalf("dry-run should not dial network, got %+v", requests)
+	}
+	assertJSONOnly(t, stdout)
+}
+
+func TestQRCodeGenerateOmitsUnchangedDefaults(t *testing.T) {
+	_, stderr, requests, err := runAPICommand(t,
+		`{"success":true}`,
+		"qr-code", "generate", "--text", "hello", "--agent", "--no-cache",
+	)
+	if err != nil {
+		t.Fatalf("Execute: %v\nstderr=%s", err, stderr)
+	}
+	var body map[string]any
+	if err := json.Unmarshal([]byte(requests[0].Body), &body); err != nil {
+		t.Fatalf("body: %v", err)
+	}
+	if body["text"] != "hello" {
+		t.Fatalf("text missing: %s", requests[0].Body)
+	}
+	for _, unexpected := range []string{"format", "size", "margin", "darkColor", "lightColor", "responseType", "errorCorrectionLevel"} {
+		if _, ok := body[unexpected]; ok {
+			t.Fatalf("unchanged default %s should be omitted from body: %s", unexpected, requests[0].Body)
+		}
+	}
+	assertNoWarning(t, stderr)
+}
+
+func TestPDFGenerationDefaultsResponseTypeBase64(t *testing.T) {
+	_, stderr, requests, err := runAPICommand(t,
+		`{"success":true}`,
+		"pdf-generation", "from-url", "--url", "https://example.com", "--agent", "--no-cache",
+	)
+	if err != nil {
+		t.Fatalf("Execute: %v\nstderr=%s", err, stderr)
+	}
+	var body map[string]any
+	if err := json.Unmarshal([]byte(requests[0].Body), &body); err != nil {
+		t.Fatalf("body: %v", err)
+	}
+	if body["responseType"] != "base64" {
+		t.Fatalf("responseType = %v, want base64", body["responseType"])
+	}
 	assertNoWarning(t, stderr)
 }
 

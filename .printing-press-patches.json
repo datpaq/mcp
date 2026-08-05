@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "applied_at": "2026-07-03",
+  "applied_at": "2026-08-05",
   "base_run_id": "20260521-153730",
   "base_printing_press_version": "4.10.0",
   "patches": [
@@ -118,6 +118,49 @@
         "internal/mcp/tools.go"
       ],
       "validated_outcome": "Focused MX CLI tests assert GET query mapping, batch POST body/path, and clean agent output."
+    },
+    {
+      "id": "activate-weather-calendar-geocoding-qr-pdf-websearch",
+      "summary": "Add hand-authored CLI and hosted MCP support for weather, calendar, geocoding, qr-code, pdf-generation, and web-search.",
+      "reason": "These ProApi services have website landing pages and public /api/v1 routes but were absent from the generated MCP/CLI spec.",
+      "files": [
+        "internal/cli/weather.go",
+        "internal/cli/calendar.go",
+        "internal/cli/geocoding.go",
+        "internal/cli/qr-code.go",
+        "internal/cli/pdf-generation.go",
+        "internal/cli/web-search.go",
+        "internal/cli/mutation_helpers.go",
+        "internal/cli/root.go",
+        "internal/cli/active-apis.json",
+        "internal/cli/active_apis_test.go",
+        "internal/cli/active_api_support_test.go",
+        "internal/cli/which.go",
+        "internal/cli/sample.go",
+        "internal/mcp/tools.go",
+        "server.json",
+        "README.md"
+      ],
+      "validated_outcome": "Focused request-construction tests for the six APIs; go test ./... passes; activeAPICount is 41."
+    },
+    {
+      "id": "tighten-new-api-helpers-and-mcp-parity",
+      "summary": "Extract shared POST/stdin helpers for hand-authored APIs; expand MCP parameter parity; default PDF responseType to base64.",
+      "reason": "Mirror CLI helper extraction and MCP tool bindings so hosted tools match ProAPI wire names for the new endpoints.",
+      "files": [
+        "internal/cli/mutation_helpers.go",
+        "internal/cli/geocoding.go",
+        "internal/cli/qr-code.go",
+        "internal/cli/pdf-generation.go",
+        "internal/cli/web-search.go",
+        "internal/cli/phone-validation_validate.go",
+        "internal/cli/phone-validation_validate-batch.go",
+        "internal/cli/phone-validation_format.go",
+        "internal/cli/web-scraping.go",
+        "internal/cli/active_api_support_test.go",
+        "internal/mcp/tools.go"
+      ],
+      "validated_outcome": "go test ./internal/cli ./internal/mcp passes; dry-run shapes match ProAPI wire names for the new endpoints."
     }
   ]
 }

@@ -36,6 +36,7 @@ func TestSupportedWebsiteActiveAPIsAreActive(t *testing.T) {
 	// dictionary -> define, dns-lookup -> dns.
 	for _, slug := range []string{
 		"aircraft",
+		"calendar",
 		"company-enrichment",
 		"convert-time",
 		"country-codes",
@@ -46,16 +47,19 @@ func TestSupportedWebsiteActiveAPIsAreActive(t *testing.T) {
 		"email-validation",
 		"ev-charger",
 		"exchange-rates-and-currency",
+		"geocoding",
 		"helicopter",
 		"image-processing",
 		"ip-geolocation",
 		"ip-intelligence",
 		"mac-address",
 		"mx-lookup",
+		"pdf-generation",
 		"phone-validation",
 		"precious-metals",
 		"profanity",
 		"public-holidays",
+		"qr-code",
 		"sample-data",
 		"secure-relay",
 		"spell-check",
@@ -66,8 +70,10 @@ func TestSupportedWebsiteActiveAPIsAreActive(t *testing.T) {
 		"user-avatar",
 		"validate-ip",
 		"vin-lookup",
+		"weather",
 		"web-scraping",
 		"web-screenshot",
+		"web-search",
 		"whois",
 		"working-days",
 	} {
@@ -79,8 +85,8 @@ func TestSupportedWebsiteActiveAPIsAreActive(t *testing.T) {
 
 func TestActiveAPICountMatchesSupportedWebsiteActiveAPIs(t *testing.T) {
 	got := activeAPICount()
-	if got != 35 {
-		t.Errorf("activeAPICount() = %d, want 35 supported active APIs", got)
+	if got != 41 {
+		t.Errorf("activeAPICount() = %d, want 41 supported active APIs", got)
 	}
 }
 

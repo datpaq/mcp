@@ -59,6 +59,6 @@ func newPhoneValidationFormatCmd(flags *rootFlags) *cobra.Command {
 	}
 	cmd.Flags().StringVar(&bodyPhoneNumber, "phone-number", "", "Phone number to format")
 	cmd.Flags().StringVar(&bodyCountryCode, "country-code", "", "Optional 2-letter ISO country code (e.g. US, GB)")
-	cmd.Flags().BoolVar(&stdinBody, "stdin", false, "Read request body as JSON from stdin")
+	addHiddenStdinFlag(cmd, &stdinBody)
 	return cmd
 }
