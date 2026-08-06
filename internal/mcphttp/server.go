@@ -31,6 +31,22 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 )
 
+// Server identity, reported in the legacy InitializeResult and in the
+// modern server/discover result. Keep serverVersion in step with the
+// "version" field in server.json.
+const (
+	serverName    = "Datpaq Proapi"
+	serverVersion = "1.0.2"
+
+	// serverInstructions is the modern discover result's optional
+	// natural-language guidance for LLMs.
+	serverInstructions = "Datpaq exposes production data APIs as tools: " +
+		"aircraft and vehicle lookups, IP geolocation and intelligence, " +
+		"email/phone/domain validation, geocoding, weather, currency and " +
+		"precious-metals rates, text and image processing, and more. " +
+		"Call tools/list to see what is available."
+)
+
 // NewHandler builds the public HTTP handler. baseURL targets the
 // Datpaq REST API (production: https://datpaq.com/api/v1). It's a
 // constructor argument rather than a hard-coded constant so staging
@@ -42,10 +58,15 @@ import (
 //	*    /mcp      → MCP streamable-http endpoint (requires Bearer)
 //	POST /         → same as /mcp (so the bare subdomain works)
 //	GET  /         → 302 → https://datpaq.com/docs/mcp
+//
+// The /mcp endpoint is dual-era: modern (2026-07-28) requests are
+// served by modern.go off the same tool registry, and everything else
+// keeps going to mcp-go's handshake-based stack exactly as before.
+// See newDualEraHandler for the dispatch rule.
 func NewHandler(baseURL string) http.Handler {
 	mcpServer := server.NewMCPServer(
-		"Datpaq Proapi",
-		"1.0.2",
+		serverName,
+		serverVersion,
 		server.WithToolCapabilities(false),
 	)
 	// RegisterPublicTools (not RegisterTools): the hosted surface
@@ -54,13 +75,28 @@ func NewHandler(baseURL string) http.Handler {
 	// server's filesystem and config to every authenticated tenant.
 	mcptools.RegisterPublicTools(mcpServer)
 
+	ctxFunc := buildContextFunc(baseURL)
+
 	httpServer := server.NewStreamableHTTPServer(mcpServer,
-		server.WithHTTPContextFunc(buildContextFunc(baseURL)),
+		server.WithHTTPContextFunc(ctxFunc),
 	)
+
+	// The modern handler reads the same registry (mcpServer.ListTools,
+	// passed as a method value so it stays live) and reuses the same
+	// ctxFunc, so both eras run identical tools through identical
+	// handlers against the caller's own API key.
+	modern := &modernHandler{
+		tools:        mcpServer.ListTools,
+		withClient:   ctxFunc,
+		name:         serverName,
+		version:      serverVersion,
+		instructions: serverInstructions,
+	}
+	mcpHandler := requireBearer(newDualEraHandler(modern, httpServer))
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", healthz)
-	mux.Handle("/mcp", requireBearer(httpServer))
+	mux.Handle("/mcp", mcpHandler)
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// ServeMux routes anything not matched by /healthz or /mcp here.
 		// Only `/` itself is meaningful; deeper paths are 404.
@@ -73,7 +109,7 @@ func NewHandler(baseURL string) http.Handler {
 		// endpoint — avoids a redirect that some clients fumble on
 		// POST (RFC 7231 §6.4.2: 301 may downgrade POST→GET).
 		if r.Method == http.MethodPost {
-			requireBearer(httpServer).ServeHTTP(w, r)
+			mcpHandler.ServeHTTP(w, r)
 			return
 		}
 		http.Redirect(w, r, "https://datpaq.com/docs/mcp", http.StatusFound)

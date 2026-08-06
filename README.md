@@ -26,18 +26,48 @@ For the **local CLI** (and the stdio MCP that ships with it for Claude Desktop),
 | --- | --- |
 | **URL** | `https://mcp.datpaq.com/` |
 | **Transport** | streamable HTTP |
+| **Protocol** | `2026-07-28` and `2025-11-25` (and earlier) — see [Protocol versions](#protocol-versions) |
 | **Auth** | `Authorization: Bearer YOUR_DATPAQ_API_KEY` (per request) |
 | **Tools** | Hosted tools across 41 active APIs |
 
-Verify with `curl`:
+Verify with `curl` — modern (`2026-07-28`):
 
 ```bash
-curl -s -X POST https://mcp.datpaq.com/ \
-  -H "Authorization: Bearer $YOUR_DATPAQ_API_KEY" \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json, text/event-stream" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"curl","version":"0"}}}'
+curl -s -X POST https://mcp.datpaq.com/ -H "Authorization: Bearer $YOUR_DATPAQ_API_KEY" -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" -H "MCP-Protocol-Version: 2026-07-28" -H "Mcp-Method: server/discover" -d '{"jsonrpc":"2.0","id":1,"method":"server/discover","params":{"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientInfo":{"name":"curl","version":"0"},"io.modelcontextprotocol/clientCapabilities":{}}}}'
 ```
+
+Or legacy (`initialize` handshake), which keeps working unchanged:
+
+```bash
+curl -s -X POST https://mcp.datpaq.com/ -H "Authorization: Bearer $YOUR_DATPAQ_API_KEY" -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"curl","version":"0"}}}'
+```
+
+## Protocol versions
+
+The server is **dual-era**: it speaks both the stateless `2026-07-28` revision and the
+handshake-based revisions (`2025-11-25` and earlier) on the same endpoint, and picks per
+request. You do not need to configure anything — point your client at the URL and it will
+use whichever it supports.
+
+| Era | Versions | How it's served |
+| --- | --- | --- |
+| Modern | `2026-07-28` | Stateless. Every request carries its version, client info, and capabilities in `_meta`, mirrored into the `MCP-Protocol-Version` / `Mcp-Method` / `Mcp-Name` headers. Implements `server/discover`, `tools/list`, `tools/call`. |
+| Legacy | `2025-11-25`, `2025-06-18`, `2025-03-26`, `2024-11-05` | The `initialize` handshake, exactly as before. Sessions, `GET` SSE streams, and `Mcp-Session-Id` all still work. |
+
+Notes for the modern era:
+
+- `tools/list` and `server/discover` return `ttlMs` and `cacheScope: "public"` caching
+  hints. The tool catalog is identical for every tenant and only changes on redeploy, so
+  clients can cache it and skip re-fetching every tool definition on each reconnect.
+- `Mcp-Method` and `Mcp-Name` are validated against the request body. A header that
+  **disagrees** with the body is rejected with `-32020 HeaderMismatch`; a **missing**
+  header is served anyway, so clients that have not implemented header mirroring yet still
+  work.
+- An unsupported version gets `400` + `-32022` listing the versions we do support, so a
+  client can retry rather than fail.
+- Features the spec deprecated in `2026-07-28` — roots, sampling, logging, DCR, and the
+  2024-11-05 HTTP+SSE transport — were never used by this server, so nothing changes for
+  you there.
 
 **Auth model:** every request must present a Datpaq API key as `Authorization: Bearer <key>` — the server holds no credentials of its own, so a single instance can serve many tenants, each billed against their own Datpaq account.
 

@@ -62,6 +62,12 @@ func TestNewHandlerRoutes(t *testing.T) {
 			wantStatus: http.StatusUnauthorized,
 		},
 	}
+	// NOTE: no GET /mcp case here. mcp-go answers it by opening a
+	// long-lived SSE stream, which never terminates against an
+	// httptest.ResponseRecorder. That GET still routes to the legacy
+	// handler is asserted in TestDualEraDispatchPrefersLegacy, which
+	// substitutes a fake legacy handler and so can observe the
+	// dispatch without hanging on the stream.
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
