@@ -20,7 +20,7 @@ func newDefinePromotedCmd(flags *rootFlags) *cobra.Command {
 		Short:       "Returns definitions, part of speech, pronunciation, and etymology for the given word.",
 		Long:        "Shortcut for 'define dictionary'. Returns definitions, part of speech, pronunciation, and etymology for the given word.",
 		Example:     "  datpaq define --word example-value",
-		Annotations: map[string]string{"pp:endpoint": "define.dictionary", "pp:method": "POST", "pp:path": "/define"},
+		Annotations: map[string]string{"pp:endpoint": "define.dictionary", "pp:method": "POST", "pp:path": "/dictionary"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if !cmd.Flags().Changed("word") && !flags.dryRun {
 				return fmt.Errorf("required flag \"%s\" not set", "word")
@@ -30,7 +30,7 @@ func newDefinePromotedCmd(flags *rootFlags) *cobra.Command {
 				return err
 			}
 
-			path := "/define"
+			path := "/dictionary"
 			params := map[string]string{}
 			// HasStore + non-GET falls through to a live API call here
 			// rather than through resolveRead (GET-only internally); a

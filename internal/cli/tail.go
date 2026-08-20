@@ -130,7 +130,7 @@ func tailKnownResources() []string {
 		"schemas",
 		"secure-relay",
 		"spell-check",
-		"states",
+		"us-states",
 		"text-language",
 		"thesaurus",
 		"unit-conversion",

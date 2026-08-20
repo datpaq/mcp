@@ -16,8 +16,8 @@ func newStatesByFipsCmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:         "by-fips <fipscode>",
 		Short:       "Get U.S. state by FIPS code",
-		Example:     "  datpaq states by-fips example-value",
-		Annotations: map[string]string{"pp:endpoint": "states.by-fips", "pp:method": "GET", "pp:path": "/states/fips/{fipscode}", "mcp:read-only": "true"},
+		Example:     "  datpaq us-states by-fips example-value",
+		Annotations: map[string]string{"pp:endpoint": "us-states.by-fips", "pp:method": "GET", "pp:path": "/us-states/fips/{fipscode}", "mcp:read-only": "true"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
 				return cmd.Help()
@@ -27,10 +27,10 @@ func newStatesByFipsCmd(flags *rootFlags) *cobra.Command {
 				return err
 			}
 
-			path := "/states/fips/{fipscode}"
+			path := "/us-states/fips/{fipscode}"
 			path = replacePathParam(path, "fipscode", args[0])
 			params := map[string]string{}
-			data, prov, err := resolveRead(cmd.Context(), c, flags, "states", false, path, params, nil)
+			data, prov, err := resolveRead(cmd.Context(), c, flags, "us-states", false, path, params, nil)
 			if err != nil {
 				return classifyAPIError(err, flags)
 			}

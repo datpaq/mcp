@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "applied_at": "2026-08-05",
+  "applied_at": "2026-08-20",
   "base_run_id": "20260521-153730",
   "base_printing_press_version": "4.10.0",
   "patches": [
@@ -161,6 +161,52 @@
         "internal/mcp/tools.go"
       ],
       "validated_outcome": "go test ./internal/cli ./internal/mcp passes; dry-run shapes match ProAPI wire names for the new endpoints."
+    },
+    {
+      "id": "sync-active-catalog-35-openapi",
+      "summary": "Sync hosted MCP active-apis to website's 35 APIs; fix gateway paths for define, states, and sample-data shortcuts.",
+      "reason": "Website API_ACTIVE_SLUGS lists 35 live APIs. The hosted MCP still advertised 41 and called stale /define, /states/states, and /generate routes.",
+      "files": [
+        "internal/cli/active-apis.json",
+        "internal/cli/active_apis_test.go",
+        "internal/cli/gateway_path_test.go",
+        "internal/cli/promoted_define.go",
+        "internal/cli/promoted_generate-batch.go",
+        "internal/cli/promoted_generate.go",
+        "internal/cli/promoted_schemas.go",
+        "internal/cli/states_by-abbr.go",
+        "internal/cli/states_by-fips.go",
+        "internal/cli/states_list.go",
+        "internal/cli/sync.go",
+        "internal/mcp/tools.go",
+        "internal/mcp/public_tools_test.go",
+        "spec.yaml",
+        "README.md",
+        "server.json"
+      ],
+      "validated_outcome": "Path-route tests cover /dictionary, /us-states, /sample-data/{generate,generate-batch,schemas}; go test ./internal/cli ./internal/mcp passes; hosted catalog is 35."
+    },
+    {
+      "id": "rename-states-command-to-us-states",
+      "summary": "Rename CLI/MCP interface from states to us-states to match ProAPI /api/v1/us-states.",
+      "reason": "The service slug and gateway path are us-states; discovery and tool names should match. Legacy `states` remains a cobra alias.",
+      "files": [
+        "internal/cli/states.go",
+        "internal/cli/states_list.go",
+        "internal/cli/states_by-abbr.go",
+        "internal/cli/states_by-fips.go",
+        "internal/cli/active-apis.json",
+        "internal/cli/active_apis_test.go",
+        "internal/cli/which.go",
+        "internal/cli/tail.go",
+        "internal/cli/sync.go",
+        "internal/cli/channel_workflow.go",
+        "internal/cli/gateway_path_test.go",
+        "internal/mcp/tools.go",
+        "internal/store/store.go",
+        "internal/store/upsert_batch_test.go"
+      ],
+      "validated_outcome": "Public MCP lists us-states_* tools; store writes us-states and reads legacy states rows; gateway path tests pass."
     }
   ]
 }

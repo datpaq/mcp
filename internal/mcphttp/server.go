@@ -42,8 +42,8 @@ const (
 	// natural-language guidance for LLMs.
 	serverInstructions = "Datpaq exposes production data APIs as tools: " +
 		"aircraft and vehicle lookups, IP geolocation and intelligence, " +
-		"email/phone/domain validation, geocoding, weather, currency and " +
-		"precious-metals rates, text and image processing, and more. " +
+		"domain validation, geocoding, weather, currency, " +
+		"text and image processing, and more. " +
 		"Call tools/list to see what is available."
 )
 

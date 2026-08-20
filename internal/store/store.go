@@ -815,7 +815,37 @@ func (s *Store) upsertGenericResourceTx(tx *sql.Tx, resourceType, id string, dat
 	return nil
 }
 
+// canonicalResourceType maps the legacy "states" slug onto the renamed
+// public/API resource type "us-states". Writes persist as us-states.
+func canonicalResourceType(resourceType string) string {
+	if resourceType == "states" {
+		return "us-states"
+	}
+	return resourceType
+}
+
+// resourceTypeLookupOrder returns store keys to try for reads. us-states is
+// canonical; "states" remains so pre-rename local DBs still resolve.
+func resourceTypeLookupOrder(resourceType string) []string {
+	switch resourceType {
+	case "states", "us-states":
+		return []string{"us-states", "states"}
+	default:
+		return []string{resourceType}
+	}
+}
+
+// typedTableName is the SQLite domain table for a resource type. The states
+// table was not renamed when the API slug became us-states.
+func typedTableName(resourceType string) string {
+	if resourceType == "us-states" {
+		return "states"
+	}
+	return resourceType
+}
+
 func (s *Store) Upsert(resourceType, id string, data json.RawMessage) error {
+	resourceType = canonicalResourceType(resourceType)
 	s.writeMu.Lock()
 	defer s.writeMu.Unlock()
 	tx, err := s.db.Begin()
@@ -834,39 +864,60 @@ func (s *Store) Upsert(resourceType, id string, data json.RawMessage) error {
 // Propagates sql.ErrNoRows on a miss so callers can distinguish absence from
 // other scan errors via errors.Is.
 func (s *Store) Get(resourceType, id string) (json.RawMessage, error) {
-	var data string
-	err := s.db.QueryRow(
-		`SELECT data FROM resources WHERE resource_type = ? AND id = ?`,
-		resourceType, id,
-	).Scan(&data)
-	if err != nil {
-		return nil, err
+	var lastErr error
+	for _, rt := range resourceTypeLookupOrder(resourceType) {
+		var data string
+		err := s.db.QueryRow(
+			`SELECT data FROM resources WHERE resource_type = ? AND id = ?`,
+			rt, id,
+		).Scan(&data)
+		if err == nil {
+			return json.RawMessage(data), nil
+		}
+		if err != sql.ErrNoRows {
+			return nil, err
+		}
+		lastErr = err
 	}
-	return json.RawMessage(data), nil
+	if lastErr == nil {
+		lastErr = sql.ErrNoRows
+	}
+	return nil, lastErr
 }
 
 func (s *Store) List(resourceType string, limit int) ([]json.RawMessage, error) {
 	if limit <= 0 {
 		limit = 200
 	}
-	rows, err := s.db.Query(
-		`SELECT data FROM resources WHERE resource_type = ? ORDER BY updated_at DESC LIMIT ?`,
-		resourceType, limit,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
 	var results []json.RawMessage
-	for rows.Next() {
-		var data string
-		if err := rows.Scan(&data); err != nil {
+	for _, rt := range resourceTypeLookupOrder(resourceType) {
+		rows, err := s.db.Query(
+			`SELECT data FROM resources WHERE resource_type = ? ORDER BY updated_at DESC LIMIT ?`,
+			rt, limit,
+		)
+		if err != nil {
 			return nil, err
 		}
-		results = append(results, json.RawMessage(data))
+		var batch []json.RawMessage
+		for rows.Next() {
+			var data string
+			if err := rows.Scan(&data); err != nil {
+				rows.Close()
+				return nil, err
+			}
+			batch = append(batch, json.RawMessage(data))
+		}
+		err = rows.Err()
+		rows.Close()
+		if err != nil {
+			return nil, err
+		}
+		if len(batch) > 0 {
+			return batch, nil
+		}
+		results = batch
 	}
-	return results, rows.Err()
+	return results, nil
 }
 
 func (s *Store) Search(query string, limit int) ([]json.RawMessage, error) {
@@ -1907,7 +1958,7 @@ func (s *Store) UpsertStates(data json.RawMessage) error {
 	}
 	defer tx.Rollback()
 
-	if err := s.upsertGenericResourceTx(tx, "states", id, data); err != nil {
+	if err := s.upsertGenericResourceTx(tx, "us-states", id, data); err != nil {
 		return err
 	}
 	if err := s.upsertStatesTx(tx, id, obj, data); err != nil {
@@ -2270,6 +2321,7 @@ var genericIDFieldFallbacks = []string{"id", "ID", "gid", "sid", "uid", "uuid", 
 // downstream typed table is misconfigured. Failures are surfaced via a
 // trailing stderr warning rather than aborting the batch.
 func (s *Store) UpsertBatch(resourceType string, items []json.RawMessage) (int, int, error) {
+	resourceType = canonicalResourceType(resourceType)
 	s.writeMu.Lock()
 	defer s.writeMu.Unlock()
 	tx, err := s.db.Begin()
@@ -2364,7 +2416,7 @@ func (s *Store) UpsertBatch(resourceType string, items []json.RawMessage) (int, 
 			typedErr = s.upsertSecureRelayTx(tx, id, obj, item)
 		case "spell-check":
 			typedErr = s.upsertSpellCheckTx(tx, id, obj, item)
-		case "states":
+		case "states", "us-states":
 			typedErr = s.upsertStatesTx(tx, id, obj, item)
 		case "text-language":
 			typedErr = s.upsertTextLanguageTx(tx, id, obj, item)
@@ -2413,6 +2465,7 @@ func (s *Store) UpsertBatch(resourceType string, items []json.RawMessage) (int, 
 }
 
 func (s *Store) SaveSyncState(resourceType, cursor string, count int) error {
+	resourceType = canonicalResourceType(resourceType)
 	s.writeMu.Lock()
 	defer s.writeMu.Unlock()
 	_, err := s.db.Exec(
@@ -2426,18 +2479,24 @@ func (s *Store) SaveSyncState(resourceType, cursor string, count int) error {
 }
 
 func (s *Store) GetSyncState(resourceType string) (cursor string, lastSynced time.Time, count int, err error) {
-	err = s.db.QueryRow(
-		`SELECT last_cursor, last_synced_at, total_count FROM sync_state WHERE resource_type = ?`,
-		resourceType,
-	).Scan(&cursor, &lastSynced, &count)
-	if err == sql.ErrNoRows {
-		return "", time.Time{}, 0, nil
+	for _, rt := range resourceTypeLookupOrder(resourceType) {
+		err = s.db.QueryRow(
+			`SELECT last_cursor, last_synced_at, total_count FROM sync_state WHERE resource_type = ?`,
+			rt,
+		).Scan(&cursor, &lastSynced, &count)
+		if err == nil {
+			return cursor, lastSynced, count, nil
+		}
+		if err != sql.ErrNoRows {
+			return "", time.Time{}, 0, err
+		}
 	}
-	return
+	return "", time.Time{}, 0, nil
 }
 
 // SaveSyncCursor stores the pagination cursor for a resource type.
 func (s *Store) SaveSyncCursor(resourceType, cursor string) error {
+	resourceType = canonicalResourceType(resourceType)
 	s.writeMu.Lock()
 	defer s.writeMu.Unlock()
 	_, err := s.db.Exec(
@@ -2451,10 +2510,12 @@ func (s *Store) SaveSyncCursor(resourceType, cursor string) error {
 
 // GetSyncCursor returns the last pagination cursor for a resource type.
 func (s *Store) GetSyncCursor(resourceType string) string {
-	var cursor sql.NullString
-	s.db.QueryRow("SELECT last_cursor FROM sync_state WHERE resource_type = ?", resourceType).Scan(&cursor)
-	if cursor.Valid {
-		return cursor.String
+	for _, rt := range resourceTypeLookupOrder(resourceType) {
+		var cursor sql.NullString
+		s.db.QueryRow("SELECT last_cursor FROM sync_state WHERE resource_type = ?", rt).Scan(&cursor)
+		if cursor.Valid {
+			return cursor.String
+		}
 	}
 	return ""
 }
@@ -2466,10 +2527,11 @@ func (s *Store) GetSyncCursor(resourceType string) string {
 // table name via a parameterized sqlite_master lookup; only that trusted name is
 // substituted (double-quoted) into the SELECT. Callers may pass any string.
 func (s *Store) ListIDs(resourceType string) ([]string, error) {
+	tableKey := typedTableName(canonicalResourceType(resourceType))
 	var table string
 	err := s.db.QueryRow(
 		`SELECT name FROM sqlite_master WHERE type='table' AND name=?`,
-		resourceType,
+		tableKey,
 	).Scan(&table)
 	var rows *sql.Rows
 	if err == nil && table != "" {
@@ -2511,13 +2573,15 @@ func (s *Store) ListIDs(resourceType string) ([]string, error) {
 // (double-quoted) into the SELECT. Mirrors ListIDs's defense pattern so
 // callers may pass any string.
 func (s *Store) ListField(resourceType, field string) ([]string, error) {
+	resourceType = canonicalResourceType(resourceType)
+	tableKey := typedTableName(resourceType)
 	if !validIdentifierRE.MatchString(field) {
 		return nil, fmt.Errorf("ListField: invalid field name %q (must match %s)", field, validIdentifierRE.String())
 	}
 	var table string
 	err := s.db.QueryRow(
 		`SELECT name FROM sqlite_master WHERE type='table' AND name=?`,
-		resourceType,
+		tableKey,
 	).Scan(&table)
 	var rows *sql.Rows
 	if err == nil && table != "" {
@@ -2570,10 +2634,12 @@ func (s *Store) ListField(resourceType, field string) ([]string, error) {
 
 // GetLastSyncedAt returns the last sync timestamp for a resource type.
 func (s *Store) GetLastSyncedAt(resourceType string) string {
-	var ts sql.NullString
-	s.db.QueryRow("SELECT last_synced_at FROM sync_state WHERE resource_type = ?", resourceType).Scan(&ts)
-	if ts.Valid {
-		return ts.String
+	for _, rt := range resourceTypeLookupOrder(resourceType) {
+		var ts sql.NullString
+		s.db.QueryRow("SELECT last_synced_at FROM sync_state WHERE resource_type = ?", rt).Scan(&ts)
+		if ts.Valid {
+			return ts.String
+		}
 	}
 	return ""
 }
@@ -2593,12 +2659,22 @@ func (s *Store) Query(query string, args ...any) (*sql.Rows, error) {
 }
 
 func (s *Store) Count(resourceType string) (int, error) {
-	var count int
-	err := s.db.QueryRow(
-		`SELECT COUNT(*) FROM resources WHERE resource_type = ?`,
-		resourceType,
-	).Scan(&count)
-	return count, err
+	var total int
+	for _, rt := range resourceTypeLookupOrder(resourceType) {
+		var count int
+		err := s.db.QueryRow(
+			`SELECT COUNT(*) FROM resources WHERE resource_type = ?`,
+			rt,
+		).Scan(&count)
+		if err != nil {
+			return 0, err
+		}
+		if count > 0 {
+			return count, nil
+		}
+		total = count
+	}
+	return total, nil
 }
 
 func (s *Store) Status() (map[string]int, error) {
@@ -2630,6 +2706,7 @@ func (s *Store) Status() (map[string]int, error) {
 // field is validated against validIdentifierRE before being spliced into
 // the query.
 func (s *Store) ResolveByName(resourceType string, input string, matchFields ...string) (string, error) {
+	canonical := canonicalResourceType(resourceType)
 	if IsUUID(input) {
 		return input, nil
 	}
@@ -2643,32 +2720,36 @@ func (s *Store) ResolveByName(resourceType string, input string, matchFields ...
 			`SELECT id FROM resources WHERE resource_type = ? AND LOWER(json_extract(data, '$.%s')) = LOWER(?)`,
 			field,
 		)
-		rows, err := s.db.Query(query, resourceType, input)
-		if err != nil {
-			continue
-		}
-		for rows.Next() {
-			var id string
-			if rows.Scan(&id) == nil {
-				// Deduplicate
-				found := false
-				for _, m := range matches {
-					if m == id {
-						found = true
-						break
+		for _, rt := range resourceTypeLookupOrder(resourceType) {
+			rows, err := s.db.Query(query, rt, input)
+			if err != nil {
+				continue
+			}
+			for rows.Next() {
+				var id string
+				if rows.Scan(&id) == nil {
+					found := false
+					for _, m := range matches {
+						if m == id {
+							found = true
+							break
+						}
+					}
+					if !found {
+						matches = append(matches, id)
 					}
 				}
-				if !found {
-					matches = append(matches, id)
-				}
+			}
+			rows.Close()
+			if len(matches) > 0 {
+				break
 			}
 		}
-		rows.Close()
 	}
 
 	switch len(matches) {
 	case 0:
-		return "", fmt.Errorf("%s %q not found in local store. Run 'sync' first, or use the UUID directly", resourceType, input)
+		return "", fmt.Errorf("%s %q not found in local store. Run 'sync' first, or use the UUID directly", canonical, input)
 	case 1:
 		return matches[0], nil
 	default:
@@ -2678,6 +2759,6 @@ func (s *Store) ResolveByName(resourceType string, input string, matchFields ...
 		} else {
 			hint = strings.Join(matches, ", ")
 		}
-		return "", fmt.Errorf("ambiguous: %q matches %d %s entries (%s). Use the exact UUID instead", input, len(matches), resourceType, hint)
+		return "", fmt.Errorf("ambiguous: %q matches %d %s entries (%s). Use the exact UUID instead", input, len(matches), canonical, hint)
 	}
 }

@@ -28,7 +28,7 @@ For the **local CLI** (and the stdio MCP that ships with it for Claude Desktop),
 | **Transport** | streamable HTTP |
 | **Protocol** | `2026-07-28` and `2025-11-25` (and earlier) — see [Protocol versions](#protocol-versions) |
 | **Auth** | `Authorization: Bearer YOUR_DATPAQ_API_KEY` (per request) |
-| **Tools** | Hosted tools across 41 active APIs |
+| **Tools** | Hosted tools across 35 active APIs |
 
 Verify with `curl` — modern (`2026-07-28`):
 

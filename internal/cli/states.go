@@ -9,10 +9,11 @@ import (
 
 func newStatesCmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:    "states",
-		Short:  "U.S. state metadata by abbreviation or FIPS code",
-		Hidden: true,
-		RunE:   parentNoSubcommandRunE(flags),
+		Use:     "us-states",
+		Aliases: []string{"states"},
+		Short:   "U.S. state metadata by abbreviation or FIPS code",
+		Hidden:  true,
+		RunE:    parentNoSubcommandRunE(flags),
 	}
 
 	cmd.AddCommand(newStatesByAbbrCmd(flags))

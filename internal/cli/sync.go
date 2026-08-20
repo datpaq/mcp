@@ -1019,7 +1019,7 @@ func upsertSingleObject(db *store.Store, resource string, data json.RawMessage) 
 		return db.UpsertSecureRelay(data)
 	case "spell-check":
 		return db.UpsertSpellCheck(data)
-	case "states":
+	case "states", "us-states":
 		return db.UpsertStates(data)
 	case "text-language":
 		return db.UpsertTextLanguage(data)
@@ -1082,7 +1082,7 @@ func defaultSyncResources() []string {
 		"public-holidays",
 		"schemas",
 		"spell-check",
-		"states",
+		"us-states",
 		"text-language",
 		"unit-conversion",
 		"vin-lookup",
@@ -1113,9 +1113,10 @@ func syncResourcePath(resource string) (string, error) {
 		"precious-metals":            "/precious-metals/assets",
 		"precious-metals-prices":     "/precious-metals/prices",
 		"public-holidays":            "/public-holidays/countries",
-		"schemas":                    "/schemas",
+		"schemas":                    "/sample-data/schemas",
 		"spell-check":                "/spell-check/languages",
-		"states":                     "/states/states",
+		"us-states":                  "/us-states",
+		"states":                     "/us-states",
 		"text-language":              "/text-language/supported",
 		"unit-conversion":            "/unit-conversion/categories",
 		"vin-lookup":                 "/vin-lookup/makes",

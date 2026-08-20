@@ -31,20 +31,18 @@ func TestListActiveInterfacesSorted(t *testing.T) {
 }
 
 func TestSupportedWebsiteActiveAPIsAreActive(t *testing.T) {
-	// Mirrored from ProApi/api_list_documentation_upload.sql IsActive=true,
-	// using CLI command/interface names where website slugs differ:
-	// dictionary -> define, dns-lookup -> dns.
+	// Mirrored from website API_ACTIVE_SLUGS (35), using CLI command/interface
+	// names where website slugs differ:
+	// dictionary -> define, dns-lookup -> dns. us-states matches the website slug.
 	for _, slug := range []string{
 		"aircraft",
 		"calendar",
-		"company-enrichment",
 		"convert-time",
 		"country-codes",
 		"current-time",
 		"define",
 		"dns",
 		"domain-lookup",
-		"email-validation",
 		"ev-charger",
 		"exchange-rates-and-currency",
 		"geocoding",
@@ -55,15 +53,12 @@ func TestSupportedWebsiteActiveAPIsAreActive(t *testing.T) {
 		"mac-address",
 		"mx-lookup",
 		"pdf-generation",
-		"phone-validation",
-		"precious-metals",
 		"profanity",
 		"public-holidays",
 		"qr-code",
 		"sample-data",
-		"secure-relay",
 		"spell-check",
-		"states",
+		"us-states",
 		"text-language",
 		"thesaurus",
 		"unit-conversion",
@@ -73,7 +68,6 @@ func TestSupportedWebsiteActiveAPIsAreActive(t *testing.T) {
 		"weather",
 		"web-scraping",
 		"web-screenshot",
-		"web-search",
 		"whois",
 		"working-days",
 	} {
@@ -85,8 +79,24 @@ func TestSupportedWebsiteActiveAPIsAreActive(t *testing.T) {
 
 func TestActiveAPICountMatchesSupportedWebsiteActiveAPIs(t *testing.T) {
 	got := activeAPICount()
-	if got != 41 {
-		t.Errorf("activeAPICount() = %d, want 41 supported active APIs", got)
+	if got != 35 {
+		t.Errorf("activeAPICount() = %d, want 35 supported active APIs", got)
+	}
+}
+
+func TestInactiveWebsiteCatalogAPIsAreNotActive(t *testing.T) {
+	// Previously active in the CLI/MCP manifest but no longer in website API_ACTIVE_SLUGS.
+	for _, slug := range []string{
+		"company-enrichment",
+		"email-validation",
+		"phone-validation",
+		"precious-metals",
+		"secure-relay",
+		"web-search",
+	} {
+		if IsActiveInterface(slug) {
+			t.Errorf("did not expect inactive %q in active-apis.json", slug)
+		}
 	}
 }
 

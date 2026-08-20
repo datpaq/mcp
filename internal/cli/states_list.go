@@ -17,20 +17,20 @@ func newStatesListCmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:         "list",
 		Short:       "List or search U.S. states",
-		Example:     "  datpaq states list",
-		Annotations: map[string]string{"pp:endpoint": "states.list", "pp:method": "GET", "pp:path": "/states/states", "mcp:read-only": "true"},
+		Example:     "  datpaq us-states list",
+		Annotations: map[string]string{"pp:endpoint": "us-states.list", "pp:method": "GET", "pp:path": "/us-states", "mcp:read-only": "true"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()
 			if err != nil {
 				return err
 			}
 
-			path := "/states/states"
+			path := "/us-states"
 			params := map[string]string{}
 			if flagQ != "" {
 				params["q"] = fmt.Sprintf("%v", flagQ)
 			}
-			data, prov, err := resolveRead(cmd.Context(), c, flags, "states", false, path, params, nil)
+			data, prov, err := resolveRead(cmd.Context(), c, flags, "us-states", false, path, params, nil)
 			if err != nil {
 				return classifyAPIError(err, flags)
 			}

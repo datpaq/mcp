@@ -146,7 +146,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithDestructiveHintAnnotation(false),
 			mcplib.WithOpenWorldHintAnnotation(true),
 		),
-		makeAPIHandler("POST", "/define", false, nil, []mcpParamBinding{{PublicName: "include_pronunciation", WireName: "include_pronunciation", Location: "body"}, {PublicName: "word", WireName: "word", Location: "body"}}, []string{}),
+		makeAPIHandler("POST", "/dictionary", false, nil, []mcpParamBinding{{PublicName: "include_pronunciation", WireName: "include_pronunciation", Location: "body"}, {PublicName: "word", WireName: "word", Location: "body"}}, []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("dns_lookup",
@@ -283,7 +283,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithDestructiveHintAnnotation(false),
 			mcplib.WithOpenWorldHintAnnotation(true),
 		),
-		makeAPIHandler("POST", "/generate", false, nil, []mcpParamBinding{{PublicName: "count", WireName: "count", Location: "body"}, {PublicName: "fields", WireName: "fields", Location: "body"}, {PublicName: "format", WireName: "format", Location: "body"}, {PublicName: "type", WireName: "type", Location: "body"}}, []string{}),
+		makeAPIHandler("POST", "/sample-data/generate", false, nil, []mcpParamBinding{{PublicName: "count", WireName: "count", Location: "body"}, {PublicName: "fields", WireName: "fields", Location: "body"}, {PublicName: "format", WireName: "format", Location: "body"}, {PublicName: "type", WireName: "type", Location: "body"}}, []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("generate-batch_sample-data-post",
@@ -292,7 +292,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithDestructiveHintAnnotation(false),
 			mcplib.WithOpenWorldHintAnnotation(true),
 		),
-		makeAPIHandler("POST", "/generate-batch", false, nil, []mcpParamBinding{{PublicName: "requests", WireName: "requests", Location: "body"}}, []string{}),
+		makeAPIHandler("POST", "/sample-data/generate-batch", false, nil, []mcpParamBinding{{PublicName: "requests", WireName: "requests", Location: "body"}}, []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("helicopter_lookup-by-icao",
@@ -796,7 +796,7 @@ s.AddTool(
 			mcplib.WithDestructiveHintAnnotation(false),
 			mcplib.WithOpenWorldHintAnnotation(true),
 		),
-		makeAPIHandler("GET", "/schemas", false, nil, []mcpParamBinding{}, []string{}),
+		makeAPIHandler("GET", "/sample-data/schemas", false, nil, []mcpParamBinding{}, []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("secure-relay_custom",
@@ -852,34 +852,34 @@ s.AddTool(
 		makeAPIHandler("POST", "/spell-check", false, nil, []mcpParamBinding{{PublicName: "language", WireName: "language", Location: "body"}, {PublicName: "text", WireName: "text", Location: "body"}}, []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("states_by-abbr",
+		mcplib.NewTool("us-states_by-abbr",
 			mcplib.WithDescription("Get U.S. state by 2-letter abbreviation. Required: abbr. Returns the GenericSuccess."),
 			mcplib.WithString("abbr", mcplib.Required(), mcplib.Description("2-letter state abbreviation")),
 			mcplib.WithReadOnlyHintAnnotation(true),
 			mcplib.WithDestructiveHintAnnotation(false),
 			mcplib.WithOpenWorldHintAnnotation(true),
 		),
-		makeAPIHandler("GET", "/states/states/{abbr}", false, nil, []mcpParamBinding{{PublicName: "abbr", WireName: "abbr", Location: "path"}}, []string{"abbr"}),
+		makeAPIHandler("GET", "/us-states/{abbr}", false, nil, []mcpParamBinding{{PublicName: "abbr", WireName: "abbr", Location: "path"}}, []string{"abbr"}),
 	)
 	s.AddTool(
-		mcplib.NewTool("states_by-fips",
+		mcplib.NewTool("us-states_by-fips",
 			mcplib.WithDescription("Get U.S. state by FIPS code. Required: fipscode. Returns the GenericSuccess."),
 			mcplib.WithString("fipscode", mcplib.Required(), mcplib.Description("2-digit FIPS state code")),
 			mcplib.WithReadOnlyHintAnnotation(true),
 			mcplib.WithDestructiveHintAnnotation(false),
 			mcplib.WithOpenWorldHintAnnotation(true),
 		),
-		makeAPIHandler("GET", "/states/fips/{fipscode}", false, nil, []mcpParamBinding{{PublicName: "fipscode", WireName: "fipscode", Location: "path"}}, []string{"fipscode"}),
+		makeAPIHandler("GET", "/us-states/fips/{fipscode}", false, nil, []mcpParamBinding{{PublicName: "fipscode", WireName: "fipscode", Location: "path"}}, []string{"fipscode"}),
 	)
 	s.AddTool(
-		mcplib.NewTool("states_list",
+		mcplib.NewTool("us-states_list",
 			mcplib.WithDescription("List or search U.S. states. Optional: q. Returns the GenericSuccess."),
 			mcplib.WithString("q", mcplib.Description("Search by state name or abbreviation")),
 			mcplib.WithReadOnlyHintAnnotation(true),
 			mcplib.WithDestructiveHintAnnotation(false),
 			mcplib.WithOpenWorldHintAnnotation(true),
 		),
-		makeAPIHandler("GET", "/states/states", false, nil, []mcpParamBinding{{PublicName: "q", WireName: "q", Location: "query"}}, []string{}),
+		makeAPIHandler("GET", "/us-states", false, nil, []mcpParamBinding{{PublicName: "q", WireName: "q", Location: "query"}}, []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("text-language_detect",
@@ -1810,7 +1810,7 @@ func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToo
 				"searchable":  true,
 			},
 			{
-				"name":        "states",
+				"name":        "us-states",
 				"description": "U.S. state metadata by abbreviation or FIPS code",
 				"endpoints":   []string{"by-abbr", "by-fips", "list"},
 				"syncable":    true,

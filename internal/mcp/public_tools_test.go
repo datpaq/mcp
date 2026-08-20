@@ -14,6 +14,7 @@ func TestMcpToolInterfaceSlug(t *testing.T) {
 		ok   bool
 	}{
 		{"whois_lookup", "whois", true},
+		{"us-states_list", "us-states", true},
 		{"aircraft_lookup-by-tail", "aircraft", true},
 		{"exchange-rates-and-currency_exchange-rate-get", "exchange-rates-and-currency", true},
 		{"generate_batch_sample_data_post", "generate-batch", true},
@@ -69,5 +70,40 @@ func TestInactiveAPIToolNames_RemovesInactiveKnownInterface(t *testing.T) {
 	RegisterPublicTools(s)
 	if _, ok := s.ListTools()["schemas_sample-data"]; ok {
 		t.Fatal("inactive schemas_sample-data tool should be removed from public MCP surface")
+	}
+}
+
+func TestRegisterPublicTools_IncludesUsStates(t *testing.T) {
+	if !cli.IsActiveInterface("us-states") {
+		t.Fatal("us-states should be active in embedded manifest")
+	}
+	s := server.NewMCPServer("datpaq", "test", server.WithToolCapabilities(true))
+	RegisterPublicTools(s)
+	tools := s.ListTools()
+	for _, name := range []string{"us-states_by-abbr", "us-states_by-fips", "us-states_list"} {
+		if _, ok := tools[name]; !ok {
+			t.Errorf("RegisterPublicTools missing %q", name)
+		}
+	}
+	if _, ok := tools["states_list"]; ok {
+		t.Fatal("legacy states_list tool should not remain on the public MCP surface")
+	}
+}
+
+func TestRegisterPublicTools_RemovesInactiveWebsiteCatalogAPIs(t *testing.T) {
+	s := server.NewMCPServer("datpaq", "test", server.WithToolCapabilities(true))
+	RegisterPublicTools(s)
+	tools := s.ListTools()
+	for _, name := range []string{
+		"company-enrichment_company-enrich",
+		"email-validation_email-validate-single",
+		"phone-validation_validate",
+		"precious-metals_prices",
+		"secure-relay_relay",
+		"web-search_search",
+	} {
+		if _, ok := tools[name]; ok {
+			t.Errorf("inactive tool %q should be removed from public MCP surface", name)
+		}
 	}
 }

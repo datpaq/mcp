@@ -442,7 +442,7 @@ paths:
           $ref: "#/components/responses/RateLimited"
         default:
           $ref: "#/components/responses/ServiceUnavailable"
-  /define:
+  /dictionary:
     post:
       tags:
         - Dictionary
@@ -2223,7 +2223,7 @@ paths:
           $ref: "#/components/responses/RateLimited"
         default:
           $ref: "#/components/responses/ServiceUnavailable"
-  /states/states:
+  /us-states:
     get:
       tags:
         - States
@@ -2250,7 +2250,7 @@ paths:
           $ref: "#/components/responses/RateLimited"
         default:
           $ref: "#/components/responses/ServiceUnavailable"
-  /states/states/{abbr}:
+  /us-states/{abbr}:
     get:
       tags:
         - States
@@ -2281,7 +2281,7 @@ paths:
           $ref: "#/components/responses/RateLimited"
         default:
           $ref: "#/components/responses/ServiceUnavailable"
-  /states/fips/{fipscode}:
+  /us-states/fips/{fipscode}:
     get:
       tags:
         - States
@@ -3204,7 +3204,7 @@ paths:
           $ref: "#/components/responses/RateLimited"
         default:
           $ref: "#/components/responses/ServiceUnavailable"
-  /generate:
+  /sample-data/generate:
     post:
       tags:
         - Sample Data
@@ -3256,7 +3256,7 @@ paths:
           $ref: "#/components/responses/RateLimited"
         default:
           $ref: "#/components/responses/ServiceUnavailable"
-  /generate-batch:
+  /sample-data/generate-batch:
     post:
       tags:
         - Sample Data
@@ -3366,7 +3366,7 @@ paths:
           $ref: "#/components/responses/RateLimited"
         default:
           $ref: "#/components/responses/ServiceUnavailable"
-  /schemas:
+  /sample-data/schemas:
     get:
       tags:
         - Sample Data

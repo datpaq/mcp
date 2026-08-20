@@ -18,14 +18,14 @@ func newSchemasPromotedCmd(flags *rootFlags) *cobra.Command {
 		Short:       "Returns all available sample-data schema names with default field lists.",
 		Long:        "Shortcut for 'schemas sample-data'. Returns all available sample-data schema names with default field lists.",
 		Example:     "  datpaq schemas",
-		Annotations: map[string]string{"pp:endpoint": "schemas.sample-data", "pp:method": "GET", "pp:path": "/schemas", "mcp:read-only": "true"},
+		Annotations: map[string]string{"pp:endpoint": "schemas.sample-data", "pp:method": "GET", "pp:path": "/sample-data/schemas", "mcp:read-only": "true"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()
 			if err != nil {
 				return err
 			}
 
-			path := "/schemas"
+			path := "/sample-data/schemas"
 			params := map[string]string{}
 			data, prov, err := resolveRead(cmd.Context(), c, flags, "schemas", false, path, params, nil)
 			if err != nil {

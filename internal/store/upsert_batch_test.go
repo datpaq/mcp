@@ -990,14 +990,14 @@ func TestUpsertBatch_PopulatesStatesTable(t *testing.T) {
 		json.RawMessage(`{"id": "test-002"}`),
 		json.RawMessage(`{"id": "test-003"}`),
 	}
-	if _, _, err := s.UpsertBatch("states", items); err != nil {
+	if _, _, err := s.UpsertBatch("us-states", items); err != nil {
 		t.Fatalf("UpsertBatch: %v", err)
 	}
 
 	db := s.DB()
 
 	var generic int
-	if err := db.QueryRow(`SELECT COUNT(*) FROM resources WHERE resource_type = ?`, "states").Scan(&generic); err != nil {
+	if err := db.QueryRow(`SELECT COUNT(*) FROM resources WHERE resource_type = ?`, "us-states").Scan(&generic); err != nil {
 		t.Fatalf("count resources: %v", err)
 	}
 	if generic != len(items) {
@@ -1263,5 +1263,63 @@ func TestUpsertBatch_PopulatesWorkingDaysTable(t *testing.T) {
 	}
 	if typed != len(items) {
 		t.Fatalf("working_days count = %d, want %d (typed table not populated by UpsertBatch)", typed, len(items))
+	}
+}
+func TestUpsertBatch_StatesAliasStoresAsUsStates(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "data.db")
+	s, err := Open(dbPath)
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	defer s.Close()
+
+	items := []json.RawMessage{json.RawMessage(`{"id": "CA"}`)}
+	if _, _, err := s.UpsertBatch("states", items); err != nil {
+		t.Fatalf("UpsertBatch: %v", err)
+	}
+
+	var genericUs, genericLegacy int
+	if err := s.DB().QueryRow(`SELECT COUNT(*) FROM resources WHERE resource_type = ?`, "us-states").Scan(&genericUs); err != nil {
+		t.Fatalf("count us-states: %v", err)
+	}
+	if err := s.DB().QueryRow(`SELECT COUNT(*) FROM resources WHERE resource_type = ?`, "states").Scan(&genericLegacy); err != nil {
+		t.Fatalf("count states: %v", err)
+	}
+	if genericUs != 1 {
+		t.Fatalf("us-states resources = %d, want 1", genericUs)
+	}
+	if genericLegacy != 0 {
+		t.Fatalf("legacy states resources = %d, want 0", genericLegacy)
+	}
+
+	if _, err := s.Get("us-states", "CA"); err != nil {
+		t.Fatalf("Get us-states: %v", err)
+	}
+	if _, err := s.Get("states", "CA"); err != nil {
+		t.Fatalf("Get states alias: %v", err)
+	}
+}
+
+func TestGet_FallsBackToLegacyStatesResourceType(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "data.db")
+	s, err := Open(dbPath)
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	defer s.Close()
+
+	if _, err := s.DB().Exec(
+		`INSERT INTO resources (id, resource_type, data, synced_at, updated_at) VALUES (?, ?, ?, datetime('now'), datetime('now'))`,
+		"NY", "states", `{"id":"NY"}`,
+	); err != nil {
+		t.Fatalf("insert legacy row: %v", err)
+	}
+
+	got, err := s.Get("us-states", "NY")
+	if err != nil {
+		t.Fatalf("Get us-states should find legacy states row: %v", err)
+	}
+	if string(got) != `{"id":"NY"}` {
+		t.Fatalf("got %s", got)
 	}
 }

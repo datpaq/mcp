@@ -17,8 +17,8 @@ func newStatesByAbbrCmd(flags *rootFlags) *cobra.Command {
 		Use:         "by-abbr <abbr>",
 		Aliases:     []string{"get"},
 		Short:       "Get U.S. state by 2-letter abbreviation",
-		Example:     "  datpaq states by-abbr example-value",
-		Annotations: map[string]string{"pp:endpoint": "states.by-abbr", "pp:method": "GET", "pp:path": "/states/states/{abbr}", "mcp:read-only": "true"},
+		Example:     "  datpaq us-states by-abbr example-value",
+		Annotations: map[string]string{"pp:endpoint": "us-states.by-abbr", "pp:method": "GET", "pp:path": "/us-states/{abbr}", "mcp:read-only": "true"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
 				return cmd.Help()
@@ -28,10 +28,10 @@ func newStatesByAbbrCmd(flags *rootFlags) *cobra.Command {
 				return err
 			}
 
-			path := "/states/states/{abbr}"
+			path := "/us-states/{abbr}"
 			path = replacePathParam(path, "abbr", args[0])
 			params := map[string]string{}
-			data, prov, err := resolveRead(cmd.Context(), c, flags, "states", false, path, params, nil)
+			data, prov, err := resolveRead(cmd.Context(), c, flags, "us-states", false, path, params, nil)
 			if err != nil {
 				return classifyAPIError(err, flags)
 			}

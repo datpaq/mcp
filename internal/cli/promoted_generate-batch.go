@@ -19,7 +19,7 @@ func newGenerateBatchPromotedCmd(flags *rootFlags) *cobra.Command {
 		Short:       "Submit multiple sample-data generation requests in one call.",
 		Long:        "Shortcut for 'generate-batch sample-data-post'. Submit multiple sample-data generation requests in one call.",
 		Example:     "  datpaq generate-batch",
-		Annotations: map[string]string{"pp:endpoint": "generate-batch.sample-data-post", "pp:method": "POST", "pp:path": "/generate-batch"},
+		Annotations: map[string]string{"pp:endpoint": "generate-batch.sample-data-post", "pp:method": "POST", "pp:path": "/sample-data/generate-batch"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if !cmd.Flags().Changed("requests") && !flags.dryRun {
 				return fmt.Errorf("required flag \"%s\" not set", "requests")
@@ -29,7 +29,7 @@ func newGenerateBatchPromotedCmd(flags *rootFlags) *cobra.Command {
 				return err
 			}
 
-			path := "/generate-batch"
+			path := "/sample-data/generate-batch"
 			params := map[string]string{}
 			// HasStore + non-GET falls through to a live API call here
 			// rather than through resolveRead (GET-only internally); a

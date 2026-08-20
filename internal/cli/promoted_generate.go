@@ -22,7 +22,7 @@ func newGeneratePromotedCmd(flags *rootFlags) *cobra.Command {
 		Short:       "Generate realistic mock data using a JSON request body. Recommended for full control over type, count, fields, and...",
 		Long:        "Shortcut for 'generate sample-data-post'. Generate realistic mock data using a JSON request body. Recommended for full control over type, count, fields, and...",
 		Example:     "  datpaq generate --type example-value",
-		Annotations: map[string]string{"pp:endpoint": "generate.sample-data-post", "pp:method": "POST", "pp:path": "/generate"},
+		Annotations: map[string]string{"pp:endpoint": "generate.sample-data-post", "pp:method": "POST", "pp:path": "/sample-data/generate"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if !cmd.Flags().Changed("type") && !flags.dryRun {
 				return fmt.Errorf("required flag \"%s\" not set", "type")
@@ -32,7 +32,7 @@ func newGeneratePromotedCmd(flags *rootFlags) *cobra.Command {
 				return err
 			}
 
-			path := "/generate"
+			path := "/sample-data/generate"
 			params := map[string]string{}
 			// HasStore + non-GET falls through to a live API call here
 			// rather than through resolveRead (GET-only internally); a
