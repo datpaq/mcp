@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -51,11 +52,7 @@ func declaredTool(group string, ep cli.APIEndpoint) mcplib.Tool {
 
 	opts := []mcplib.ToolOption{mcplib.WithDescription(desc)}
 	for _, p := range ep.Params {
-		usage := p.Usage
-		if p.Type == "file" || p.Type == "files" {
-			usage += " (base64-encoded file content)"
-		}
-		popts := []mcplib.PropertyOption{mcplib.Description(usage)}
+		popts := []mcplib.PropertyOption{mcplib.Description(declaredParamUsage(ep, p))}
 		if p.Required || p.In == "path" {
 			popts = append(popts, mcplib.Required())
 		}
@@ -81,6 +78,32 @@ func declaredTool(group string, ep cli.APIEndpoint) mcplib.Tool {
 		mcplib.WithOpenWorldHintAnnotation(true),
 	)
 	return mcplib.NewTool(declaredToolName(group, ep), opts...)
+}
+
+var cliFlagRef = regexp.MustCompile(`--([a-z0-9-]+)`)
+
+// declaredParamUsage rewrites CLI help for file params, which name local
+// paths and --flags: MCP callers send base64 content and use param names.
+func declaredParamUsage(ep cli.APIEndpoint, p cli.APIParam) string {
+	if p.Type != "file" && p.Type != "files" {
+		return p.Usage
+	}
+	names := map[string]string{}
+	for _, q := range ep.Params {
+		names[q.Flag] = declaredPublicName(q)
+	}
+	usage := cliFlagRef.ReplaceAllStringFunc(p.Usage, func(ref string) string {
+		if name, ok := names[ref[2:]]; ok {
+			return name
+		}
+		return ref
+	})
+	usage = strings.TrimPrefix(usage, "Comma-separated ")
+	usage = strings.TrimPrefix(strings.TrimPrefix(usage, "Local "), "local ")
+	if p.Type == "files" {
+		return "Array of base64-encoded " + usage
+	}
+	return "Base64-encoded " + usage
 }
 
 func declaredHandler(ep cli.APIEndpoint) server.ToolHandlerFunc {

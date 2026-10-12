@@ -315,6 +315,23 @@
         "internal/mcphttp/declared_tools_test.go"
       ],
       "validated_outcome": "go test ./... passes: table-driven request, required-flag, MCP-param, and spec.yaml parity tests cover every new endpoint. Hosted tools/list serves translate_text, markdown-convert_to-html."
+    },
+    {
+      "id": "staging-catalog-document-apis",
+      "summary": "Add document-convert, document-generation, pdf-toolkit, and ocr via the declared endpoint table; word MCP file params as base64 content and assert hosted file params are forwarded verbatim.",
+      "reason": "These services are in the staging 63-API catalog. File params arrived with the framework port (declared-api-table-core); on MCP they are base64-only and the hosted server never reads local paths.",
+      "files": [
+        "internal/cli/active-apis.json",
+        "internal/cli/active_apis_test.go",
+        "internal/cli/document-convert.go",
+        "internal/cli/document-generation.go",
+        "internal/cli/pdf-toolkit.go",
+        "internal/cli/ocr.go",
+        "internal/mcp/declared_tools.go",
+        "internal/mcp/declared_tools_test.go",
+        "internal/mcphttp/declared_tools_test.go"
+      ],
+      "validated_outcome": "go test ./... passes: table-driven request, required-flag, MCP-param, and spec.yaml parity tests cover every new endpoint. Hosted tools/list serves ocr_parse, pdf-toolkit_run; hosted ocr_parse forwards file=/etc/passwd as the literal string. File-param descriptions name base64 content and MCP params, never local paths or --flags."
     }
   ]
 }

@@ -65,6 +65,8 @@ func TestHostedToolsListServesDeclaredAPIs(t *testing.T) {
 		"markdown-convert_to-html",
 		"market-cap_lookup",
 		"mortgage-calculator_payment",
+		"ocr_parse",
+		"pdf-toolkit_run",
 		"translate_text",
 		"unemployment_state",
 		"vat-validation-and-rates_validate",
@@ -161,5 +163,30 @@ func TestHostedDeclaredToolUsesCallerKey(t *testing.T) {
 	}
 	if !strings.Contains(rr.Body.String(), "monthly_payment") {
 		t.Errorf("response body did not carry the API payload: %s", rr.Body.String())
+	}
+}
+
+// TestHostedFileParamsAreNotReadFromDisk proves file-typed params are
+// forwarded as the caller's base64 string: the hosted server never
+// treats them as paths on its own filesystem.
+func TestHostedFileParamsAreNotReadFromDisk(t *testing.T) {
+	var body map[string]any
+	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"text":""}`))
+	}))
+	defer api.Close()
+
+	h := NewHandler(api.URL)
+	rr := modernPost(t, h, "tools/call",
+		`{"jsonrpc":"2.0","id":10,"method":"tools/call","params":{"name":"ocr_parse","arguments":{"file":"/etc/passwd","filename":"scan.pdf"},"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28"}}}`,
+		map[string]string{headerMcpName: "ocr_parse"})
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 (body: %s)", rr.Code, rr.Body.String())
+	}
+	if body["fileBase64"] != "/etc/passwd" {
+		t.Errorf("upstream fileBase64 = %v, want the caller's value verbatim", body["fileBase64"])
 	}
 }
