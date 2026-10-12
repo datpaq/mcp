@@ -161,3 +161,17 @@ func TestDeclaredFloatFlagsSendPlainDecimals(t *testing.T) {
 		t.Fatalf("want loan_amount=1000000 (not 1e+06), got %+v", requests)
 	}
 }
+
+func TestDeclaredDeleteReportsDeleteAction(t *testing.T) {
+	stdout, stderr, requests, err := runAPICommand(t, `{"success":true}`, "ping-human", "cancel", "esc_123", "--json")
+	if err != nil {
+		t.Fatalf("Execute: %v\nstderr=%s", err, stderr)
+	}
+	if len(requests) != 1 || requests[0].Method != "DELETE" {
+		t.Fatalf("want one DELETE, got %+v", requests)
+	}
+	var env map[string]any
+	if err := json.Unmarshal([]byte(stdout), &env); err != nil || env["action"] != "delete" {
+		t.Fatalf("envelope action = %v (err %v), want delete\n%s", env["action"], err, stdout)
+	}
+}

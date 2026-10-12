@@ -59,6 +59,7 @@ func TestHostedToolsListServesDeclaredAPIs(t *testing.T) {
 	tools := hostedToolNames(t)
 
 	for _, name := range []string{
+		"breach-check_password",
 		"iban_validate",
 		"interest-rate_current",
 		"libor_latest",
@@ -67,6 +68,7 @@ func TestHostedToolsListServesDeclaredAPIs(t *testing.T) {
 		"mortgage-calculator_payment",
 		"ocr_parse",
 		"pdf-toolkit_run",
+		"ping-human_cancel",
 		"translate_text",
 		"unemployment_state",
 		"vat-validation-and-rates_validate",
