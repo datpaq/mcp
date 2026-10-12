@@ -192,3 +192,39 @@ func TestHostedFileParamsAreNotReadFromDisk(t *testing.T) {
 		t.Errorf("upstream fileBase64 = %v, want the caller's value verbatim", body["fileBase64"])
 	}
 }
+
+// TestHostedPathParamToolEscapesAndRequiresPath drives a path-param tool
+// through the real handler: values are escaped into the path, and a missing
+// path param fails before any upstream request.
+func TestHostedPathParamToolEscapesAndRequiresPath(t *testing.T) {
+	var gotPath string
+	calls := 0
+	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		gotPath = r.URL.EscapedPath()
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"valid":false}`))
+	}))
+	defer api.Close()
+	h := NewHandler(api.URL)
+
+	rr := modernPost(t, h, "tools/call",
+		`{"jsonrpc":"2.0","id":11,"method":"tools/call","params":{"name":"iban_lookup","arguments":{"iban":"DE89 3704"},"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28"}}}`,
+		map[string]string{headerMcpName: "iban_lookup"})
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 (body: %s)", rr.Code, rr.Body.String())
+	}
+	if gotPath != "/iban/DE89%203704" {
+		t.Errorf("upstream path = %q, want /iban/DE89%%203704", gotPath)
+	}
+
+	rr = modernPost(t, h, "tools/call",
+		`{"jsonrpc":"2.0","id":12,"method":"tools/call","params":{"name":"iban_lookup","arguments":{},"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28"}}}`,
+		map[string]string{headerMcpName: "iban_lookup"})
+	if !strings.Contains(rr.Body.String(), `missing required parameter \"iban\"`) {
+		t.Errorf("missing iban: body = %s, want a missing-parameter tool error", rr.Body.String())
+	}
+	if calls != 1 {
+		t.Errorf("upstream calls = %d, want 1 (no request for the missing-parameter call)", calls)
+	}
+}

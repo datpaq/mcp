@@ -349,6 +349,17 @@
         "internal/mcphttp/declared_tools_test.go"
       ],
       "validated_outcome": "go test ./... passes: table-driven request, required-flag, MCP-param, and spec.yaml parity tests cover every new endpoint. Hosted tools/list serves ping-human_cancel, breach-check_password. TestDeclaredDeleteReportsDeleteAction (held back until ping-human existed) passes."
+    },
+    {
+      "id": "declared-mcp-review-fixes",
+      "summary": "Reject missing required/path args and dot-segment path values in declared MCP tools, rewrite --flag references in every declared param description, and type files items as strings.",
+      "reason": "Code review found that mcp-go does not enforce input schemas (a missing path param sent a literal {placeholder} upstream), PathEscape leaves '..' intact, non-file params still named CLI flags, and files arrays lacked an items type.",
+      "files": [
+        "internal/mcp/declared_tools.go",
+        "internal/mcp/declared_tools_test.go",
+        "internal/mcphttp/declared_tools_test.go"
+      ],
+      "validated_outcome": "Unit and hosted-handler tests cover missing/dot-segment params, escaped path values, and MCP-worded descriptions; mutating the guards fails them; go test ./... passes."
     }
   ]
 }
