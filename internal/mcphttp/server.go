@@ -36,14 +36,14 @@ import (
 // "version" field in server.json.
 const (
 	serverName    = "Datpaq Proapi"
-	serverVersion = "1.0.2"
+	serverVersion = "1.6.0"
 
 	// serverInstructions is the modern discover result's optional
 	// natural-language guidance for LLMs.
 	serverInstructions = "Datpaq exposes production data APIs as tools: " +
 		"aircraft and vehicle lookups, IP geolocation and intelligence, " +
-		"domain validation, geocoding, weather, currency, " +
-		"text and image processing, and more. " +
+		"domain validation, geocoding, weather, finance and economic data, " +
+		"text, document, and image processing, and more. " +
 		"Call tools/list to see what is available."
 )
 

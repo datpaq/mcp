@@ -2,8 +2,8 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "com.datpaq/datpaq",
   "title": "DATPAQ",
-  "description": "35 production APIs over one hosted MCP endpoint.",
-  "version": "1.0.2",
+  "description": "63 production APIs over one hosted MCP endpoint.",
+  "version": "1.6.0",
   "repository": {
     "url": "https://github.com/datpaq/mcp",
     "source": "github"
