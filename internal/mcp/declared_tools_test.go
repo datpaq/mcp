@@ -3,6 +3,7 @@
 package mcp
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/datpaq/mcp/internal/cli"
@@ -45,5 +46,38 @@ func TestDeclaredAPIToolsRegisteredWithParams(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+func TestDeclaredFileParamDescriptionsAreMCPWorded(t *testing.T) {
+	s := server.NewMCPServer("test", "0")
+	RegisterTools(s)
+	want := map[string]string{
+		"ocr_parse.file":                "Base64-encoded PDF or image (or pass url)",
+		"document-convert_convert.file": "Base64-encoded file to upload (or pass file_url)",
+		"pdf-toolkit_run.file":          "Base64-encoded PDF for non-merge operations",
+		"pdf-toolkit_run.files":         "Array of base64-encoded PDFs for merge (2-20)",
+	}
+	for _, g := range cli.DeclaredAPIGroups() {
+		for _, ep := range g.Endpoints {
+			for _, p := range ep.Params {
+				if p.Type != "file" && p.Type != "files" {
+					continue
+				}
+				key := declaredToolName(g.Name, ep) + "." + declaredPublicName(p)
+				prop, _ := s.GetTool(declaredToolName(g.Name, ep)).Tool.InputSchema.Properties[declaredPublicName(p)].(map[string]any)
+				desc, _ := prop["description"].(string)
+				if strings.Contains(desc, "--") || strings.Contains(strings.ToLower(desc), "local") || !strings.Contains(strings.ToLower(desc), "base64") {
+					t.Errorf("%s description %q must describe base64 content without CLI flags or local paths", key, desc)
+				}
+				if w, ok := want[key]; ok && desc != w {
+					t.Errorf("%s description = %q, want %q", key, desc, w)
+				}
+				delete(want, key)
+			}
+		}
+	}
+	for key := range want {
+		t.Errorf("file param %s not found", key)
 	}
 }
