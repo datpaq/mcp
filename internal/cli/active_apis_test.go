@@ -44,7 +44,6 @@ func TestSupportedWebsiteActiveAPIsAreActive(t *testing.T) {
 		"dns",
 		"domain-lookup",
 		"ev-charger",
-		"exchange-rates-and-currency",
 		"geocoding",
 		"helicopter",
 		"image-processing",
@@ -68,6 +67,7 @@ func TestSupportedWebsiteActiveAPIsAreActive(t *testing.T) {
 		"weather",
 		"web-scraping",
 		"web-screenshot",
+		"web-search",
 		"whois",
 		"working-days",
 	} {
@@ -89,10 +89,10 @@ func TestInactiveWebsiteCatalogAPIsAreNotActive(t *testing.T) {
 	for _, slug := range []string{
 		"company-enrichment",
 		"email-validation",
+		"exchange-rates-and-currency",
 		"phone-validation",
 		"precious-metals",
 		"secure-relay",
-		"web-search",
 	} {
 		if IsActiveInterface(slug) {
 			t.Errorf("did not expect inactive %q in active-apis.json", slug)

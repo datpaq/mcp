@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "applied_at": "2026-08-20",
+  "applied_at": "2026-10-12",
   "base_run_id": "20260521-153730",
   "base_printing_press_version": "4.10.0",
   "patches": [
@@ -207,6 +207,18 @@
         "internal/store/upsert_batch_test.go"
       ],
       "validated_outcome": "Public MCP lists us-states_* tools; store writes us-states and reads legacy states rows; gateway path tests pass."
+    },
+    {
+      "id": "staging-catalog-63-discovery-sync",
+      "summary": "Re-activate web-search, deactivate exchange-rates-and-currency, and bring spec.yaml level with datpaq/cli main (193 paths, info.version 1.1.0).",
+      "reason": "Staging /api-list (63 APIs) includes web-search and omits exchange-rates-and-currency. spec.yaml is the regen input shared with the CLI and is read by the declared-endpoint spec parity test; it had last been synced from CLI f414f8c.",
+      "files": [
+        "internal/cli/active-apis.json",
+        "internal/cli/active_apis_test.go",
+        "internal/mcp/public_tools_test.go",
+        "spec.yaml"
+      ],
+      "validated_outcome": "go test ./... passes; hosted surface drops exchange-rates-and-currency_* and serves web-search_*."
     }
   ]
 }

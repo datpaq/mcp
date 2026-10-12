@@ -11,7 +11,6 @@
     "dns",
     "domain-lookup",
     "ev-charger",
-    "exchange-rates-and-currency",
     "geocoding",
     "helicopter",
     "image-processing",
@@ -35,6 +34,7 @@
     "weather",
     "web-scraping",
     "web-screenshot",
+    "web-search",
     "whois",
     "working-days"
   ]
