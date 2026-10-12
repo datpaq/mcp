@@ -282,6 +282,20 @@
         "internal/mcphttp/declared_tools_test.go"
       ],
       "validated_outcome": "go test ./... passes: table-driven request, required-flag, MCP-param, and spec.yaml parity tests cover every new endpoint. Hosted tools/list serves unemployment_state, market-cap_lookup."
+    },
+    {
+      "id": "staging-catalog-banking-tax-apis",
+      "summary": "Add iban, vat-validation-and-rates, and income-tax via the declared endpoint table.",
+      "reason": "These services are in the staging 63-API catalog. GET/POST twins on one route use the existing -get suffix convention for the GET command.",
+      "files": [
+        "internal/cli/active-apis.json",
+        "internal/cli/active_apis_test.go",
+        "internal/cli/iban.go",
+        "internal/cli/vat-validation-and-rates.go",
+        "internal/cli/income-tax.go",
+        "internal/mcphttp/declared_tools_test.go"
+      ],
+      "validated_outcome": "go test ./... passes: table-driven request, required-flag, MCP-param, and spec.yaml parity tests cover every new endpoint. Hosted tools/list serves iban_validate, vat-validation-and-rates_validate."
     }
   ]
 }

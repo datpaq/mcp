@@ -59,11 +59,13 @@ func TestHostedToolsListServesDeclaredAPIs(t *testing.T) {
 	tools := hostedToolNames(t)
 
 	for _, name := range []string{
+		"iban_validate",
 		"interest-rate_current",
 		"libor_latest",
 		"market-cap_lookup",
 		"mortgage-calculator_payment",
 		"unemployment_state",
+		"vat-validation-and-rates_validate",
 		"web-search_search",
 	} {
 		if !tools[name] {
