@@ -97,10 +97,10 @@ func TestRegisterPublicTools_RemovesInactiveWebsiteCatalogAPIs(t *testing.T) {
 	for _, name := range []string{
 		"company-enrichment_company-enrich",
 		"email-validation_email-validate-single",
+		"exchange-rates-and-currency_exchange-rate-get",
 		"phone-validation_validate",
 		"precious-metals_prices",
 		"secure-relay_relay",
-		"web-search_search",
 	} {
 		if _, ok := tools[name]; ok {
 			t.Errorf("inactive tool %q should be removed from public MCP surface", name)
