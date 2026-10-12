@@ -61,7 +61,9 @@ func TestHostedToolsListServesDeclaredAPIs(t *testing.T) {
 	for _, name := range []string{
 		"interest-rate_current",
 		"libor_latest",
+		"market-cap_lookup",
 		"mortgage-calculator_payment",
+		"unemployment_state",
 		"web-search_search",
 	} {
 		if !tools[name] {
