@@ -13,12 +13,18 @@ import (
 )
 
 func printMutationResponse(cmd *cobra.Command, flags *rootFlags, resource, path string, statusCode int, data json.RawMessage) error {
+	return printMutationResponseAs(cmd, flags, "post", resource, path, statusCode, data)
+}
+
+// printMutationResponseAs is printMutationResponse with the envelope action
+// set to the HTTP verb actually sent (put, patch, delete).
+func printMutationResponseAs(cmd *cobra.Command, flags *rootFlags, action, resource, path string, statusCode int, data json.RawMessage) error {
 	if flags.quiet {
 		return nil
 	}
 	if flags.asJSON || (!isTerminal(cmd.OutOrStdout()) && !flags.csv && !flags.quiet && !flags.plain) {
 		envelope := map[string]any{
-			"action":   "post",
+			"action":   action,
 			"resource": resource,
 			"path":     path,
 			"status":   statusCode,

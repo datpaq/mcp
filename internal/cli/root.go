@@ -258,6 +258,9 @@ Run 'datpaq doctor' to verify auth and connectivity.`,
 	rootCmd.AddCommand(newVinLookupCmd(flags))
 	rootCmd.AddCommand(newWeatherCmd(flags))
 	rootCmd.AddCommand(newWebSearchCmd(flags))
+	for _, g := range DeclaredAPIGroups() {
+		rootCmd.AddCommand(newDeclaredAPICmd(flags, g))
+	}
 	rootCmd.AddCommand(newWorkingDaysCmd(flags))
 	rootCmd.AddCommand(newDoctorCmd(flags))
 	rootCmd.AddCommand(newAuthCmd(flags))

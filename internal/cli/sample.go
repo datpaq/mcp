@@ -164,9 +164,13 @@ func extractParams(c *cobra.Command, endpoint string) []paramSpec {
 		if vals := f.Annotations[cobra.BashCompOneRequiredFlag]; len(vals) > 0 && vals[0] == "true" {
 			required = true
 		}
+		wireName := sampleWireParamName(endpoint, f.Name)
+		if vals := f.Annotations[annWire]; len(vals) > 0 {
+			wireName = vals[0]
+		}
 		out = append(out, paramSpec{
 			name:        f.Name,
-			wireName:    sampleWireParamName(endpoint, f.Name),
+			wireName:    wireName,
 			typeName:    f.Value.Type(),
 			description: f.Usage,
 			required:    required,
