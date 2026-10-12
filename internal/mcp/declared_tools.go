@@ -62,8 +62,10 @@ func declaredTool(group string, ep cli.APIEndpoint) mcplib.Tool {
 			opts = append(opts, mcplib.WithNumber(name, popts...))
 		case "bool":
 			opts = append(opts, mcplib.WithBoolean(name, popts...))
-		case "array", "files":
+		case "array":
 			opts = append(opts, mcplib.WithArray(name, popts...))
+		case "files":
+			opts = append(opts, mcplib.WithArray(name, append(popts, mcplib.WithStringItems())...))
 		case "object":
 			opts = append(opts, mcplib.WithObject(name, popts...))
 		default:
@@ -82,12 +84,9 @@ func declaredTool(group string, ep cli.APIEndpoint) mcplib.Tool {
 
 var cliFlagRef = regexp.MustCompile(`--([a-z0-9-]+)`)
 
-// declaredParamUsage rewrites CLI help for file params, which name local
-// paths and --flags: MCP callers send base64 content and use param names.
+// declaredParamUsage adapts CLI help for MCP: --flag references become param
+// names, and file params describe base64 content instead of local paths.
 func declaredParamUsage(ep cli.APIEndpoint, p cli.APIParam) string {
-	if p.Type != "file" && p.Type != "files" {
-		return p.Usage
-	}
 	names := map[string]string{}
 	for _, q := range ep.Params {
 		names[q.Flag] = declaredPublicName(q)
@@ -98,6 +97,9 @@ func declaredParamUsage(ep cli.APIEndpoint, p cli.APIParam) string {
 		}
 		return ref
 	})
+	if p.Type != "file" && p.Type != "files" {
+		return usage
+	}
 	usage = strings.TrimPrefix(usage, "Comma-separated ")
 	usage = strings.TrimPrefix(strings.TrimPrefix(usage, "Local "), "local ")
 	if p.Type == "files" {
@@ -117,20 +119,31 @@ func declaredHandler(ep cli.APIEndpoint) server.ToolHandlerFunc {
 	}
 	inner := makeAPIHandler(ep.Method, ep.Path, false, nil, bindings, nil)
 	return func(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
-		normalizeDeclaredArgs(ep, req.GetArguments())
+		if err := normalizeDeclaredArgs(ep, req.GetArguments()); err != nil {
+			return mcplib.NewToolResultError(err.Error()), nil
+		}
 		return inner(ctx, req)
 	}
 }
 
-// normalizeDeclaredArgs fixes values that makeAPIHandler would format with
-// %v: JSON numbers bound to query/path become plain decimals (not 1e+06), and
-// path values are URL-escaped. File params are passed through as base64; the
-// MCP server never reads local paths on a caller's behalf.
-func normalizeDeclaredArgs(ep cli.APIEndpoint, args map[string]any) {
+// normalizeDeclaredArgs rejects missing required or path params (mcp-go does
+// not enforce the input schema, and a missing path param would leave its
+// {placeholder} in the URL) and fixes values that makeAPIHandler would format
+// with %v: JSON numbers bound to query/path become plain decimals (not
+// 1e+06), and path values are URL-escaped, with dot segments rejected. File
+// params are passed through as base64; the MCP server never reads local
+// paths on a caller's behalf.
+func normalizeDeclaredArgs(ep cli.APIEndpoint, args map[string]any) error {
 	for _, p := range ep.Params {
 		name := declaredPublicName(p)
 		v, ok := args[name]
-		if !ok || p.In == "body" {
+		if !ok || v == nil {
+			if p.Required || p.In == "path" {
+				return fmt.Errorf("missing required parameter %q", name)
+			}
+			continue
+		}
+		if p.In == "body" {
 			continue
 		}
 		s := fmt.Sprintf("%v", v)
@@ -138,10 +151,14 @@ func normalizeDeclaredArgs(ep cli.APIEndpoint, args map[string]any) {
 			s = strconv.FormatFloat(f, 'f', -1, 64)
 		}
 		if p.In == "path" {
+			if s == "" || s == "." || s == ".." {
+				return fmt.Errorf("invalid value %q for path parameter %q", s, name)
+			}
 			s = url.PathEscape(s)
 		}
 		args[name] = s
 	}
+	return nil
 }
 
 // declaredContextResources lists declared groups for the MCP context tool.
