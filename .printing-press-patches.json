@@ -332,6 +332,23 @@
         "internal/mcphttp/declared_tools_test.go"
       ],
       "validated_outcome": "go test ./... passes: table-driven request, required-flag, MCP-param, and spec.yaml parity tests cover every new endpoint. Hosted tools/list serves ocr_parse, pdf-toolkit_run; hosted ocr_parse forwards file=/etc/passwd as the literal string. File-param descriptions name base64 content and MCP params, never local paths or --flags."
+    },
+    {
+      "id": "staging-catalog-web-security-apis",
+      "summary": "Add breach-check, tech-stack-detection, logo, structured-extraction, and ping-human via the declared endpoint table, completing the 63-API staging catalog.",
+      "reason": "These services are in the staging 63-API catalog. breach-check exposes only the hash-prefix password check; ping-human reply routes are human-facing and not gateway APIs.",
+      "files": [
+        "internal/cli/active-apis.json",
+        "internal/cli/active_apis_test.go",
+        "internal/cli/breach-check.go",
+        "internal/cli/tech-stack-detection.go",
+        "internal/cli/logo.go",
+        "internal/cli/structured-extraction.go",
+        "internal/cli/ping-human.go",
+        "internal/cli/declared_api_test.go",
+        "internal/mcphttp/declared_tools_test.go"
+      ],
+      "validated_outcome": "go test ./... passes: table-driven request, required-flag, MCP-param, and spec.yaml parity tests cover every new endpoint. Hosted tools/list serves ping-human_cancel, breach-check_password. TestDeclaredDeleteReportsDeleteAction (held back until ping-human existed) passes."
     }
   ]
 }
