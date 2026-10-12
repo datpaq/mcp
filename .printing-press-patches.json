@@ -266,6 +266,22 @@
         "internal/mcp/declared_tools_test.go"
       ],
       "validated_outcome": "TestNormalizeDeclaredArgs passes /etc/passwd through unchanged; TestDeclaredFloatFlagsSendPlainDecimals passes; go test ./... passes."
+    },
+    {
+      "id": "staging-catalog-finance-econ-apis",
+      "summary": "Add market-cap, sec-filings, gdp, economic-indicators, and unemployment via the declared endpoint table.",
+      "reason": "These services are in the staging 63-API catalog; unemployment metro routes are omitted because ProApi hard-codes 503 for them.",
+      "files": [
+        "internal/cli/active-apis.json",
+        "internal/cli/active_apis_test.go",
+        "internal/cli/market-cap.go",
+        "internal/cli/sec-filings.go",
+        "internal/cli/gdp.go",
+        "internal/cli/economic-indicators.go",
+        "internal/cli/unemployment.go",
+        "internal/mcphttp/declared_tools_test.go"
+      ],
+      "validated_outcome": "go test ./... passes: table-driven request, required-flag, MCP-param, and spec.yaml parity tests cover every new endpoint. Hosted tools/list serves unemployment_state, market-cap_lookup."
     }
   ]
 }
