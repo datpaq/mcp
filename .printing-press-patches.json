@@ -296,6 +296,25 @@
         "internal/mcphttp/declared_tools_test.go"
       ],
       "validated_outcome": "go test ./... passes: table-driven request, required-flag, MCP-param, and spec.yaml parity tests cover every new endpoint. Hosted tools/list serves iban_validate, vat-validation-and-rates_validate."
+    },
+    {
+      "id": "staging-catalog-text-convert-apis",
+      "summary": "Add lorem-ipsum, translate, deslop, diffy, color-convert, encoding-convert, data-format-convert, and markdown-convert via the declared endpoint table.",
+      "reason": "These services are in the staging 63-API catalog. Pure alias routes (GET /lorem-ipsum, POST /color-convert) are not exposed separately.",
+      "files": [
+        "internal/cli/active-apis.json",
+        "internal/cli/active_apis_test.go",
+        "internal/cli/lorem-ipsum.go",
+        "internal/cli/translate.go",
+        "internal/cli/deslop.go",
+        "internal/cli/diffy.go",
+        "internal/cli/color-convert.go",
+        "internal/cli/encoding-convert.go",
+        "internal/cli/data-format-convert.go",
+        "internal/cli/markdown-convert.go",
+        "internal/mcphttp/declared_tools_test.go"
+      ],
+      "validated_outcome": "go test ./... passes: table-driven request, required-flag, MCP-param, and spec.yaml parity tests cover every new endpoint. Hosted tools/list serves translate_text, markdown-convert_to-html."
     }
   ]
 }
