@@ -360,6 +360,19 @@
         "internal/mcphttp/declared_tools_test.go"
       ],
       "validated_outcome": "Unit and hosted-handler tests cover missing/dot-segment params, escaped path values, and MCP-worded descriptions; mutating the guards fails them; go test ./... passes."
+    },
+    {
+      "id": "mirror-cli-release-1.6.0",
+      "summary": "Bump server.json, the hosted serverVersion, the CLI version, and the User-Agent to 1.6.0 and advertise 63 APIs.",
+      "reason": "Mirrors the datpaq/cli 1.6.0 release that shipped the 63-API catalog, as earlier MCP releases did.",
+      "files": [
+        "server.json",
+        "internal/mcphttp/server.go",
+        "internal/cli/root.go",
+        "internal/client/client.go",
+        "README.md"
+      ],
+      "validated_outcome": "go test ./... passes; server/discover reports 1.6.0."
     }
   ]
 }
