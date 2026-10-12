@@ -219,6 +219,53 @@
         "spec.yaml"
       ],
       "validated_outcome": "go test ./... passes; hosted surface drops exchange-rates-and-currency_* and serves web-search_*."
+    },
+    {
+      "id": "declared-api-table-core",
+      "summary": "Port the CLI's declarative endpoint table (with file/files param types) and wire it into root, which, and sample; first consumer is interest-rate.",
+      "reason": "28 staging-catalog APIs are absent from the generated spec; one table keeps CLI commands, typed MCP tools, which entries, and sample wire names in sync with datpaq/cli.",
+      "files": [
+        "internal/cli/declared_api.go",
+        "internal/cli/declared_api_test.go",
+        "internal/cli/root.go",
+        "internal/cli/which.go",
+        "internal/cli/sample.go",
+        "internal/cli/mutation_helpers.go",
+        "internal/cli/interest-rate.go",
+        "internal/cli/active-apis.json",
+        "internal/cli/active_apis_test.go"
+      ],
+      "validated_outcome": "Table-driven tests assert method, path, and wire params for every declared endpoint plus required-flag enforcement; go test ./... passes."
+    },
+    {
+      "id": "declared-api-mcp-spec-rates",
+      "summary": "Register typed MCP tools for declared APIs (served on the hosted surface through the ctx client), add a spec.yaml parity test and hosted tools/list coverage; add libor and mortgage-calculator.",
+      "reason": "MCP params must match CLI wiring for every declared endpoint, and the hosted server must serve declared tools with the caller's key while still hiding inactive, local-state, and cobra-mirror tools.",
+      "files": [
+        "internal/mcp/declared_tools.go",
+        "internal/mcp/declared_tools_test.go",
+        "internal/mcp/tools.go",
+        "internal/cli/declared_api_spec_test.go",
+        "internal/mcphttp/declared_tools_test.go",
+        "internal/cli/libor.go",
+        "internal/cli/mortgage-calculator.go",
+        "internal/cli/active-apis.json",
+        "internal/cli/active_apis_test.go"
+      ],
+      "validated_outcome": "Hosted handler test lists every declared tool, covers every active interface, excludes inactive/local-state/cobra-mirror tools, and forwards the caller's bearer key; go test ./... passes."
+    },
+    {
+      "id": "declared-api-review-fixes",
+      "summary": "Carry the CLI's declared-API review fixes: PUT/PATCH/DELETE dispatch with the real action, plain-decimal floats, MCP numeric/path arg normalization, base64-only MCP file params, typed spec examples.",
+      "reason": "Ported from datpaq/cli in the same change as the framework so the MCP never shipped the pre-fix behavior; base64-only file params keep the hosted server from reading local files.",
+      "files": [
+        "internal/cli/declared_api.go",
+        "internal/cli/declared_api_test.go",
+        "internal/cli/mutation_helpers.go",
+        "internal/mcp/declared_tools.go",
+        "internal/mcp/declared_tools_test.go"
+      ],
+      "validated_outcome": "TestNormalizeDeclaredArgs passes /etc/passwd through unchanged; TestDeclaredFloatFlagsSendPlainDecimals passes; go test ./... passes."
     }
   ]
 }
